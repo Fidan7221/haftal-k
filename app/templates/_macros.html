@@ -1,0 +1,35 @@
+{# Form alanlarını Bootstrap 5 biçiminde çizen yardımcı makrolar.
+   Kullanım: {% from "_macros.html" import render_field %}
+             {{ render_field(form.email, icon="envelope", placeholder="ornek@mail.com") }} #}
+
+{% macro render_field(field, icon=None, help=None) %}
+  <div class="mb-3">
+    {{ field.label(class="form-label fw-medium") }}
+    <div class="input-group has-validation">
+      {% if icon %}
+        <span class="input-group-text"><i class="bi bi-{{ icon }}"></i></span>
+      {% endif %}
+      {{ field(class="form-control" + (" is-invalid" if field.errors else ""), **kwargs) }}
+      {% if field.type == "PasswordField" %}
+        <button class="btn btn-outline-secondary toggle-password" type="button"
+                data-target="{{ field.id }}" aria-label="Parolayı göster">
+          <i class="bi bi-eye"></i>
+        </button>
+      {% endif %}
+      {% for error in field.errors %}
+        <div class="invalid-feedback">{{ error }}</div>
+      {% endfor %}
+    </div>
+    {% if help %}<div class="form-text">{{ help }}</div>{% endif %}
+  </div>
+{% endmacro %}
+
+{% macro render_checkbox(field) %}
+  <div class="form-check mb-3">
+    {{ field(class="form-check-input" + (" is-invalid" if field.errors else "")) }}
+    {{ field.label(class="form-check-label small") }}
+    {% for error in field.errors %}
+      <div class="invalid-feedback">{{ error }}</div>
+    {% endfor %}
+  </div>
+{% endmacro %}

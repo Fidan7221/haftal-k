@@ -1,0 +1,62 @@
+/* Tarladan Sofraya – ortak stiller */
+:root {
+  --farm: #2f7d32;
+  --farm-dark: #1f5a23;
+  --farm-soft: #eef6ec;
+  --earth: #a0703c;
+}
+
+body { background: #f6f8f4; }
+
+/* Renk yardımcıları */
+.bg-farm   { background-color: var(--farm) !important; }
+.text-farm { color: var(--farm) !important; }
+.link-farm { color: var(--farm); font-weight: 600; text-decoration: none; }
+.link-farm:hover { text-decoration: underline; }
+
+.btn-farm {
+  --bs-btn-color: #fff;
+  --bs-btn-bg: var(--farm);
+  --bs-btn-border-color: var(--farm);
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: var(--farm-dark);
+  --bs-btn-hover-border-color: var(--farm-dark);
+  --bs-btn-active-bg: var(--farm-dark);
+}
+
+/* Giriş / kayıt kartları */
+.auth-card { border-radius: 1rem; }
+.auth-side {
+  background: linear-gradient(160deg, var(--farm) 0%, var(--farm-dark) 70%, var(--earth) 140%);
+}
+
+/* Hesap türü kartları */
+.role-card {
+  border: 2px solid #dee2e6;
+  border-radius: .75rem;
+  background: #fff;
+  transition: border-color .15s, box-shadow .15s;
+}
+.role-card:hover { border-color: var(--farm); }
+.btn-check:checked + .role-card {
+  border-color: var(--farm);
+  background: var(--farm-soft);
+  box-shadow: 0 0 0 .2rem rgba(47, 125, 50, .15);
+  color: inherit;
+}
+.btn-check:checked + .role-card i { color: var(--farm); }
+
+.producer-box { background: var(--farm-soft); border: 1px dashed var(--farm); }
+
+/* Ana sayfa */
+.hero { background: linear-gradient(180deg, var(--farm-soft), transparent); }
+.hero-icon { font-size: 11rem; color: var(--farm); opacity: .85; }
+
+.stat-card { border: 0; border-left: 4px solid var(--farm); }
+
+/* Odak halkası marka rengiyle */
+.form-control:focus, .form-check-input:focus {
+  border-color: var(--farm);
+  box-shadow: 0 0 0 .2rem rgba(47, 125, 50, .2);
+}
+.form-check-input:checked { background-color: var(--farm); border-color: var(--farm); }
