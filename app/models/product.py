@@ -14,6 +14,15 @@ class Unit:
 
     ALL = (KG, PIECE, CRATE, BUNCH, LITER)
 
+    # Form açılır listeleri için (değer, görünen ad)
+    CHOICES = [
+        (KG, "Kilogram (kg)"),
+        (PIECE, "Adet"),
+        (CRATE, "Kasa"),
+        (BUNCH, "Demet"),
+        (LITER, "Litre"),
+    ]
+
 
 class Category(BaseModel):
     __tablename__ = "categories"
@@ -34,7 +43,11 @@ class Category(BaseModel):
 
 
 class Product(BaseModel):
-    """Üreticinin kataloğundaki ürün tanımı. Fiyat ve stok ilanda (Listing) tutulur."""
+    """Üreticinin kataloğundaki ürün tanımı.
+
+    stock_quantity: Üreticinin elindeki (depodaki) toplam miktar.
+    Satış fiyatı ve satışa ayrılan miktar ilanda (Listing) tutulur (Hafta 7).
+    """
 
     __tablename__ = "products"
 
@@ -44,6 +57,8 @@ class Product(BaseModel):
     category_id = db.Column(db.Integer, db.ForeignKey("categories.id"), nullable=False)
     name = db.Column(db.String(120), nullable=False)
     unit = db.Column(db.String(10), default=Unit.KG, nullable=False)
+    # Hafta 6'da eklendi. server_default, var olan satırlara da 0 yazılmasını sağlar.
+    stock_quantity = db.Column(db.Numeric(10, 2), default=0, server_default="0", nullable=False)
     description = db.Column(db.Text)
     is_organic = db.Column(db.Boolean, default=False, nullable=False)
     image_path = db.Column(db.String(255))

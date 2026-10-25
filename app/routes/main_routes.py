@@ -22,16 +22,10 @@ def index():
 def dashboard():
     """Kullanıcıyı rolüne uygun panele yönlendirir."""
     if current_user.is_producer:
-        return redirect(url_for("main.producer_dashboard"))
+        return redirect(url_for("producer.dashboard"))  # Hafta 6: producer_routes.py'ye taşındı
     if current_user.is_admin:
         return redirect(url_for("main.admin_dashboard"))
     return redirect(url_for("main.customer_dashboard"))
-
-
-@main_bp.route("/uretici/panel")
-@role_required(RoleName.PRODUCER)
-def producer_dashboard():
-    return render_template("producer/dashboard.html", profile=current_user.producer_profile)
 
 
 @main_bp.route("/musteri/panel")

@@ -60,3 +60,34 @@ body { background: #f6f8f4; }
   box-shadow: 0 0 0 .2rem rgba(47, 125, 50, .2);
 }
 .form-check-input:checked { background-color: var(--farm); border-color: var(--farm); }
+
+/* --- Hafta 6: ürün kartları ve görseller --- */
+.product-thumb {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  background: var(--farm-soft);
+}
+.product-thumb-sm {
+  width: 52px;
+  height: 52px;
+  border-radius: .5rem;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--farm-soft);
+}
+.product-thumb-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--farm);
+  font-size: 2rem;
+}
+.product-thumb-sm.product-thumb-empty { font-size: 1.25rem; }
+.product-card { transition: transform .15s, box-shadow .15s; overflow: hidden; }
+.product-card:hover { transform: translateY(-2px); box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .08) !important; }
+.product-card.is-archived { opacity: .6; }
+.image-preview img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+
+.stat-warn { border-left-color: #d97706; }
+.table-group-start td { border-top: 2px solid #dee2e6; }

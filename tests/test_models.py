@@ -48,16 +48,19 @@ def test_password_is_hashed(app):
 
 
 def test_full_flow_relationships(app):
-    # Üretici, ürün ve ilan
-    farmer = make_user("ciftci@test.com", RoleName.PRODUCER)
-    profile = ProducerProfile(user=farmer, farm_name="Genç Çiftliği", region="Bingöl / Genç")
+    # Sorgular önce yapılır: nesneler oturuma eklenmeden sorgu çalışırsa SQLAlchemy
+    # otomatik flush sırasında uyarı (SAWarning) verir.
     domates = Category.query.filter_by(slug="domates").first()
+    farmer = make_user("ciftci@test.com", RoleName.PRODUCER)
+    customer = make_user("musteri@test.com", RoleName.CUSTOMER)
+
+    # Üretici, ürün ve ilan
+    profile = ProducerProfile(user=farmer, farm_name="Genç Çiftliği", region="Bingöl / Genç")
     product = Product(producer=profile, category=domates, name="Organik Domates")
     listing = Listing(product=product, title="Taze domates", price=Decimal("25.50"),
                       stock_quantity=Decimal("100"))
 
     # Müşteri sepeti
-    customer = make_user("musteri@test.com", RoleName.CUSTOMER)
     cart = Cart(user=customer, items=[CartItem(listing=listing, quantity=Decimal("2"))])
     db.session.add_all([profile, product, listing, cart])
     db.session.commit()
