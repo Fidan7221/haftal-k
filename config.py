@@ -33,6 +33,10 @@ class Config:
     REMEMBER_COOKIE_SAMESITE = "Lax"
     REMEMBER_COOKIE_DURATION = timedelta(days=7)  # "Beni hatırla" en fazla 7 gün geçerli
 
+    # Hatalı giriş sınırı (Hafta 5): 5 hatalı denemeden sonra e-posta 5 dakika kilitlenir
+    LOGIN_MAX_ATTEMPTS = 5
+    LOGIN_LOCKOUT_MINUTES = 5
+
     # Ürün görseli yükleme (Hafta 6)
     UPLOAD_FOLDER = os.path.join(BASE_DIR, "app", "static", "uploads")
     MAX_CONTENT_LENGTH = 5 * 1024 * 1024  # 5 MB

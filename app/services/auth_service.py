@@ -5,9 +5,13 @@ Kurallar:
 - Kayıt formundan yalnızca "müşteri" ve "üretici" hesabı açılabilir.
 - Yönetici hesabı yalnızca terminalden açılır: flask create-admin
 - Parola düz metin olarak hiçbir yerde saklanmaz (User.set_password hash'ler).
+- Art arda 5 hatalı girişte e-posta birkaç dakika kilitlenir (login_limiter.py).
 """
+import math
+
 from app.models import Cart, ProducerProfile, RoleName, User
 from app.repositories.user_repository import RoleRepository, UserRepository
+from app.services.login_limiter import get_login_limiter
 
 SELF_REGISTER_ROLES = (RoleName.CUSTOMER, RoleName.PRODUCER)
 
@@ -80,9 +84,25 @@ def authenticate(email, password):
     Kullanıcı bulunamadığında da parolası yanlış olduğunda da aynı sonuç döner;
     böylece saldırgan hangi e-postaların kayıtlı olduğunu öğrenemez.
     """
-    user = UserRepository.get_by_email(normalize_email(email))
+    email = normalize_email(email)
+    limiter = get_login_limiter()
+
+    # 1) Kilitliyse parolaya hiç bakmadan reddet (kaba kuvvet denemesi durur)
+    remaining = limiter.remaining_lock_seconds(email)
+    if remaining > 0:
+        minutes = math.ceil(remaining / 60)
+        raise AuthError(
+            f"Çok fazla hatalı giriş denemesi yapıldı. Lütfen {minutes} dakika sonra tekrar deneyin."
+        )
+
+    # 2) Kullanıcı yoksa da parola yanlışsa da hatalı deneme sayılır
+    user = UserRepository.get_by_email(email)
     if user is None or not user.check_password(password):
+        limiter.register_failure(email)
         return None
+
+    # 3) Başarılı giriş: sayaç sıfırlanır
+    limiter.reset(email)
     if not user.is_active:
         raise AuthError("Hesabınız pasif durumda. Lütfen yöneticiyle iletişime geçin.")
     return user

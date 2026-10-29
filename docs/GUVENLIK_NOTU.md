@@ -36,9 +36,25 @@ mobil uygulama ve API'lerde kullanılır. Bu proje web arayüzü olduğu için o
 - Girişten sonra `next` adresi kontrol edilir; başka bir siteye yönlendirme (open redirect) engellenir.
 - Pasif hesap giriş yapamaz.
 
+## 4.1 Hatalı giriş denemesi sınırı (kaba kuvvet saldırısına karşı)
+- Aynı e-posta ile art arda **5 hatalı giriş** yapılırsa o e-posta **5 dakika kilitlenir**
+  (`config.py` → `LOGIN_MAX_ATTEMPTS`, `LOGIN_LOCKOUT_MINUTES`).
+- Kilitliyken parola **doğru olsa bile** giriş yapılamaz; "Çok fazla hatalı giriş denemesi yapıldı. Lütfen X dakika
+  sonra tekrar deneyin." mesajı gösterilir. Böylece saldırgan binlerce parolayı hızlıca deneyemez.
+- **Başarılı giriş** sayacı sıfırlar; kilit süresi dolunca kullanıcı yeniden 5 hakla başlar.
+- E-posta küçük harfe çevrilerek sayılır (`AYSE@test.com` ile `ayse@test.com` aynı sayaçtır).
+- Kayıtlı olmayan e-postalar da aynı şekilde kilitlenir; kilit mesajı "bu e-posta kayıtlı mı?" sorusunu ele vermez.
+- Kod: `app/services/login_limiter.py` (`LoginAttemptLimiter`), kullanıldığı yer `auth_service.authenticate`.
+- **Bilinen sınır:** Sayaç sunucu belleğinde tutulur; ek kütüphane veya migration gerekmez ama sunucu yeniden
+  başlarsa sayaçlar sıfırlanır. Gerçek yayında veri tabanında veya Redis'te (ör. Flask-Limiter) tutulmalı, IP adresine
+  göre de sınır konmalıdır. Ayrıca saldırgan bilerek 5 yanlış parola girerek başka birinin hesabını 5 dakika
+  kilitleyebilir; kilit süresinin kısa tutulmasının nedeni budur.
+
 ## 5. Testler
 `tests/test_auth.py`: kayıt, zayıf parola, aynı e-posta, yönetici olarak kayıt engeli, yanlış parola, çıkışın POST olması,
 open redirect, giriş yapmamış kullanıcı ve yanlış rol erişimi.
+Hatalı giriş sınırı testleri: 5 hatadan sonra kilit, 4 hatada kilit olmaması, kilit süresinin dolması (sahte saat ile),
+başarılı girişin sayacı sıfırlaması, kilidin e-postaya özel ve büyük/küçük harf duyarsız olması, kayıtsız e-postada aynı mesaj.
 
 ## 6. Sözlü sınav kısa cevapları
 1. **Parolayı neden hash'liyoruz, tuz nedir?** Veri tabanı çalınsa bile parolalar okunamasın diye. Tuz, parolaya eklenen
@@ -46,5 +62,7 @@ open redirect, giriş yapmamış kullanıcı ve yanlış rol erişimi.
 2. **Oturum ve token farkı?** Yukarıda 2. bölüm.
 3. **Rol tabanlı erişimi nasıl uyguladın?** `@role_required` dekoratörüyle, sunucu tarafında.
 4. **Başarısız giriş denemesinde ne oluyor?** Genel bir hata mesajı gösterilir, sayfa tekrar açılır; hangi alanın yanlış
-   olduğu söylenmez.
+   olduğu söylenmez. Hatalı denemeler sayılır; art arda 5 hatada e-posta 5 dakika kilitlenir (4.1. bölüm).
 5. **Yetkisiz kullanıcı korumalı sayfaya giderse?** Giriş yapmamışsa giriş sayfasına, rolü uymuyorsa 403 sayfasına gider.
+6. **Kaba kuvvet (brute force) saldırısını nasıl engelledin?** Hatalı girişleri e-postaya göre sayıyorum; 5 hatadan sonra
+   5 dakika boyunca doğru parola bile kabul edilmiyor. Sayaç başarılı girişte sıfırlanıyor.

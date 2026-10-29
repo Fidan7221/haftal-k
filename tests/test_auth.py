@@ -128,3 +128,86 @@ def test_producer_cannot_open_customer_panel(client):
     register(client, PRODUCER)
     login(client, "mehmet@test.com")
     assert client.get("/musteri/panel").status_code == 403
+
+
+# --- Hatalı giriş sınırı (kaba kuvvete karşı) ---------------------------------
+
+class FakeClock:
+    """Testte 5 dakika beklememek için elle ileri sarılabilen saat."""
+
+    def __init__(self):
+        self.now = 1000.0
+
+    def __call__(self):
+        return self.now
+
+
+def use_fake_clock():
+    from app.services.login_limiter import get_login_limiter
+
+    clock = FakeClock()
+    get_login_limiter().clock = clock
+    return clock
+
+
+def fail_login(client, email, times):
+    for _ in range(times):
+        login(client, email, "YanlisParola1")
+
+
+def test_account_locked_after_max_failed_attempts(client):
+    register(client, CUSTOMER)
+    fail_login(client, "ayse@test.com", 5)
+
+    # Kilitliyken doğru parola da kabul edilmez
+    response = login(client, "ayse@test.com")
+    page = response.get_data(as_text=True)
+    assert "Çok fazla hatalı giriş denemesi" in page
+    assert client.get("/musteri/panel").status_code == 302  # oturum açılmadı
+
+
+def test_four_failures_do_not_lock(client):
+    register(client, CUSTOMER)
+    fail_login(client, "ayse@test.com", 4)
+    response = login(client, "ayse@test.com")
+    assert "Çok fazla hatalı giriş denemesi" not in response.get_data(as_text=True)
+    assert client.get("/musteri/panel").status_code == 200
+
+
+def test_lock_expires_after_lockout_time(client, app):
+    register(client, CUSTOMER)
+    clock = use_fake_clock()
+    fail_login(client, "ayse@test.com", 5)
+    assert "Çok fazla hatalı" in login(client, "ayse@test.com").get_data(as_text=True)
+
+    clock.now += app.config["LOGIN_LOCKOUT_MINUTES"] * 60 + 1  # süre doldu
+    login(client, "ayse@test.com")
+    assert client.get("/musteri/panel").status_code == 200
+
+
+def test_successful_login_resets_counter(client):
+    register(client, CUSTOMER)
+    fail_login(client, "ayse@test.com", 4)
+    login(client, "ayse@test.com")          # başarılı giriş sayacı sıfırlar
+    client.post("/auth/logout")
+    fail_login(client, "ayse@test.com", 4)  # yeniden 4 hata: toplam 8 ama kilit yok
+    login(client, "ayse@test.com")
+    assert client.get("/musteri/panel").status_code == 200
+
+
+def test_lock_is_per_email_and_case_insensitive(client):
+    register(client, CUSTOMER)
+    register(client, PRODUCER)
+    fail_login(client, "AYSE@test.com", 5)  # büyük harfle denense de aynı e-posta sayılır
+    assert "Çok fazla hatalı" in login(client, "ayse@test.com").get_data(as_text=True)
+
+    # Başka bir kullanıcı etkilenmez
+    response = login(client, "mehmet@test.com")
+    assert "Üretici Paneli" in response.get_data(as_text=True)
+
+
+def test_unknown_email_gets_same_lock_message(client):
+    # Kayıtlı olmayan e-posta da kilitlenir; mesaj e-postanın var olup olmadığını ele vermez
+    fail_login(client, "olmayan@test.com", 5)
+    response = login(client, "olmayan@test.com")
+    assert "Çok fazla hatalı giriş denemesi" in response.get_data(as_text=True)
