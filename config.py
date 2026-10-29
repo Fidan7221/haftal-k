@@ -6,6 +6,7 @@ Ayarlar ortama göre üç sınıfa ayrılır:
 - ProductionConfig:  Gerçek yayında (hata ayıklama kapalı)
 """
 import os
+from datetime import timedelta
 
 from dotenv import load_dotenv
 
@@ -24,6 +25,13 @@ class Config:
         "sqlite:///" + os.path.join(BASE_DIR, "instance", "app.db")
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+    # Oturum ve çerez güvenliği (Hafta 5)
+    SESSION_COOKIE_HTTPONLY = True        # JavaScript oturum çerezini okuyamaz (XSS'e karşı)
+    SESSION_COOKIE_SAMESITE = "Lax"       # Başka sitelerden gelen isteklere çerez eklenmez (CSRF'e karşı)
+    REMEMBER_COOKIE_HTTPONLY = True
+    REMEMBER_COOKIE_SAMESITE = "Lax"
+    REMEMBER_COOKIE_DURATION = timedelta(days=7)  # "Beni hatırla" en fazla 7 gün geçerli
 
     # Ürün görseli yükleme (Hafta 6)
     UPLOAD_FOLDER = os.path.join(BASE_DIR, "app", "static", "uploads")
@@ -53,6 +61,8 @@ class TestingConfig(Config):
 
 class ProductionConfig(Config):
     DEBUG = False
+    SESSION_COOKIE_SECURE = True   # Yayında çerezler yalnızca HTTPS ile gönderilir
+    REMEMBER_COOKIE_SECURE = True
     USE_MOCK_APIS = False
 
 

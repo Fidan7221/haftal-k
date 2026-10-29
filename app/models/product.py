@@ -50,6 +50,10 @@ class Product(BaseModel):
     """
 
     __tablename__ = "products"
+    __table_args__ = (
+        # Stok negatif olamaz: form ve servis atlansa bile veri tabanı reddeder (Hafta 4 kısıtı)
+        db.CheckConstraint("stock_quantity >= 0", name="ck_product_stock_non_negative"),
+    )
 
     producer_id = db.Column(
         db.Integer, db.ForeignKey("producer_profiles.id"), nullable=False, index=True

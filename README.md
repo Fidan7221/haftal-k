@@ -1,3 +1,41 @@
+# Çiftçi Doğrudan Satış ve Fiyat Takip Platformu ("Tarladan Sofraya")
+
+Üreticinin (çiftçinin) ürünlerini aracısız sattığı, tüketicinin hal fiyatlarını takip edebildiği web platformu.
+Bilgisayar Uygulamaları I — Proje Tabanlı Ders, Bingöl Üniversitesi Bilgisayar Programcılığı.
+
+**Teknoloji:** Python 3 + Flask, SQLAlchemy, SQLite, Bootstrap 5, pytest
+**Belgeler:** [Mimari şema](docs/MIMARI.md) · [ER diyagramı](docs/ER_DIYAGRAMI.md) ·
+[Güvenlik notu (Hafta 5)](docs/GUVENLIK_NOTU.md) · [Üretici ve Ürün modülü (Hafta 6)](docs/MODUL_URETICI_URUN.md)
+
+## Haftalara göre durum
+
+| Hafta | Konu | Nerede |
+|---|---|---|
+| 3 | Kurulum, mimari, veri modeli | Bu README, `.gitignore`, `docs/MIMARI.md`, `docs/ER_DIYAGRAMI.md` |
+| 4 | Veritabanı tasarımı ve veri erişim katmanı | `migrations/*.sql`, `src/` (Node.js + SQLite), aşağıdaki "Hafta 4" bölümü |
+| 5 | Kullanıcı yönetimi ve kimlik doğrulama | `app/services/auth_service.py`, `app/utils/decorators.py`, `docs/GUVENLIK_NOTU.md` |
+| 6 | Üretici ve ürün kaydı | `app/services/producer_service.py`, `app/routes/producer_routes.py`, `docs/MODUL_URETICI_URUN.md` |
+
+## Flask uygulamasını çalıştırma (VS Code terminali)
+
+```
+python -m venv venv
+venv\Scripts\activate            # Windows
+pip install -r requirements.txt
+copy .env.example .env            # sonra .env içindeki SECRET_KEY'i değiştir
+
+flask db init                     # yalnızca İLK seferde (migrations_flask/ klasörünü oluşturur)
+flask db migrate -m "ilk tablolar"
+flask db upgrade                  # tabloları oluşturur
+flask seed-db                     # roller ve kategoriler
+flask create-admin                # yönetici hesabı (isteğe bağlı)
+
+python run.py                     # http://127.0.0.1:5000
+python -m pytest                  # testler
+```
+
+---
+
 # Hafta 4 — Veritabanı Tasarımı ve Veri Erişim Katmanı
 **Proje:** Çiftçi Doğrudan Satış ve Fiyat Takip Platformu
 **Teknoloji:** Node.js + SQLite (Node'un yerleşik `node:sqlite` modülü)

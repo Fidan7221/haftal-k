@@ -25,7 +25,9 @@ def create_app(config_name=None):
 
     # Eklentileri uygulamaya bağla
     db.init_app(app)
-    migrate.init_app(app, db, render_as_batch=True)  # SQLite'ta ALTER TABLE için gerekli
+    # SQLite'ta ALTER TABLE için render_as_batch gerekli.
+    # "migrations/" klasörü Hafta 4 Node.js SQL dosyalarına ait; Flask migration'ları ayrı klasörde durur.
+    migrate.init_app(app, db, render_as_batch=True, directory="migrations_flask")
     login_manager.init_app(app)
     csrf.init_app(app)
 
