@@ -4,7 +4,7 @@
 **Nerede:** Canlı site https://tarladan-sofraya.onrender.com (yedek: yerelde `python run.py`)
 
 > **Sunumdan 10 dakika önce** canlı siteyi bir kez aç. Ücretsiz Render planı boşta kalınca uyur;
-> ilk açılış 30-60 saniye sürebilir. Sayfanın en altında **v0.8.2** yazdığını kontrol et (0.8.0 + demo görselleri için iki küçük düzeltme).
+> ilk açılış 30-60 saniye sürebilir. Sayfanın en altında **v0.8.3** yazdığını kontrol et (0.8.0 + demo görselleri için küçük düzeltmeler).
 
 ## Hazırlık
 
@@ -22,7 +22,7 @@
 ---
 
 ## Adım 1 — Mimari (30 sn, slayt veya `docs/MIMARI.md`)
-**Söyle:** "Proje Flask ile katmanlı yazıldı: rota → servis → repository → veri tabanı. Yerelde SQLite, canlıda PostgreSQL. Vize sürümü v0.8.0 Git'te etiketli; sonra demo ürün görselleri için iki küçük düzeltme yaptım, o yüzden sitede v0.8.2 yazıyor. PATCH numarası arttı çünkü yeni modül yok."
+**Söyle:** "Proje Flask ile katmanlı yazıldı: rota → servis → repository → veri tabanı. Yerelde SQLite, canlıda PostgreSQL. Vize sürümü v0.8.0 Git'te etiketli; sonra demo ürün görselleri için birkaç küçük düzeltme yaptım, o yüzden sitede v0.8.3 yazıyor. PATCH numarası arttı çünkü yeni modül yok."
 
 ## Adım 2 — Ziyaretçi vitrini (45 sn)
 1. Ana sayfa → **İlanlar**. Arama kutusuna `domates` yaz; kategori filtresini göster.
@@ -70,7 +70,7 @@
 ## Adım 8 — Testler ve sürüm (45 sn) — VS Code
 1. Terminal: `python -m pytest` → **98 passed**.
 2. `tests/test_integration.py` → `test_end_to_end_happy_path`: "Az önce gösterdiğim senaryonun otomatik hâli."
-3. `git tag` → `v0.8.0`, `v0.8.1`, `v0.8.2`; `CHANGELOG.md` → ilgili bölümler.
+3. `git tag` → `v0.8.0` … `v0.8.3`; `CHANGELOG.md` → ilgili bölümler.
 
 **Söyle:** "Bu hafta 4 entegrasyon hatası buldum. Her biri için önce hatayı yakalayan bir regresyon testi yazdım, sonra düzelttim."
 
