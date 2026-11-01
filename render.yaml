@@ -13,7 +13,8 @@ services:
     name: tarladan-sofraya
     runtime: python
     plan: free
-    region: frankfurt          # Türkiye'ye en yakın bölge
+    # Bölge yazılmadı: web servisi ve veri tabanı AYNI bölgede (varsayılan Oregon) olmalı.
+    # Farklı bölgedeyse iç adres (dpg-...) çözülemez: "failed to resolve host" hatası.
     buildCommand: pip install -r requirements.txt
     # Her açılışta: 1) tabloları migration ile güncelle  2) roller/kategoriler
     #               3) demo verisi (yalnızca ilk sefer)    4) web sunucusunu başlat

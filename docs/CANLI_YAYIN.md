@@ -100,6 +100,7 @@ Sunumda gösterilecek akış:
 |---|---|---|
 | Sayfa ilk açılışta 30-60 sn bekliyor | Ücretsiz servis 15 dk boşta kalınca uyur | Normal. Sunumdan birkaç dakika önce adresi bir kez açın |
 | `RuntimeError: SECRET_KEY ortam değişkeni tanımlanmamış` | Değişken yok | Web servis → **Environment** → `SECRET_KEY` ekle (Generate) → Save |
+| `failed to resolve host 'dpg-...'` | Web servisi ile veri tabanı farklı bölgelerde (iç adres yalnızca aynı bölgede çalışır) | İkisini aynı bölgede kurun. Bu projede yaşandı: render.yaml'daki `region` satırı kaldırıldı, web servisi silinip Blueprint yeniden senkronlandı |
 | `could not translate host name` / `connection refused` | `DATABASE_URL` yanlış | Veri tabanı sayfasından **Internal Database URL**'yi kopyalayıp `DATABASE_URL`'ye yapıştırın |
 | `relation "users" does not exist` | Tablolar kurulmamış | Start Command'in `flask db upgrade && ...` ile başladığını kontrol edin |
 | `DEMO_PASSWORD tanımlı değil` | Değer girilmemiş | Environment → `DEMO_PASSWORD` ekle → **Manual Deploy → Deploy latest commit** |
@@ -109,9 +110,9 @@ Sunumda gösterilecek akış:
 
 ## Blueprint çalışmazsa: elle kurulum
 
-1. **New + → PostgreSQL** → Name `tarladan-sofraya-db`, Region Frankfurt, Plan Free → Create. Açılınca **Internal Database URL**'yi kopyalayın.
+1. **New + → PostgreSQL** → Name `tarladan-sofraya-db`, Region (web servisiyle AYNI olmalı), Plan Free → Create. Açılınca **Internal Database URL**'yi kopyalayın.
 2. **New + → Web Service** → haftal-k reposu →
-   - Runtime: Python 3, Region: Frankfurt, Plan: Free
+   - Runtime: Python 3, Region: veri tabanıyla aynı, Plan: Free
    - Build Command: `pip install -r requirements.txt`
    - Start Command: `flask db upgrade && flask seed-db && flask seed-demo && gunicorn run:app --bind 0.0.0.0:$PORT`
 3. **Environment Variables**: `FLASK_APP=run.py`, `FLASK_ENV=production`, `SECRET_KEY` (Generate), `DATABASE_URL` (1. adımdaki adres), `DEMO_PASSWORD`, `PYTHON_VERSION=3.12.7` → **Create Web Service**.
