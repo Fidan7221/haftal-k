@@ -7,6 +7,11 @@ Her sürüm bir Git etiketiyle (`git tag -a vX.Y.Z`) işaretlenir.
 ## [Yayımlanmadı]
 - Hafta 9: Hal fiyatı API entegrasyonu ve gerçek ödeme altyapısı (planlanan → `0.9.0`)
 
+## [0.8.2] - 2026-11-01
+### Değişti
+- Demo ürün görselleri çizimden gerçek fotoğraflara çevrildi (`.jpg`, 4:3). Kaynak notu: `app/static/img/demo/KAYNAK.md`
+- `flask seed-demo` eski demo görselini (`.png`) yenisiyle değiştirir; üreticinin kendi yüklediği görsele dokunmaz
+
 ## [0.8.1] - 2026-11-01
 ### Eklendi
 - Demo ürünlerine örnek görseller (`app/static/img/demo/`, projede çizilmiş illüstrasyonlar). Canlıda görselsiz eklenmiş demo ürünlerine `flask seed-demo` görseli sonradan ekler.

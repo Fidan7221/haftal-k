@@ -5,7 +5,7 @@ Bilgisayar Uygulamaları I — Proje Tabanlı Ders, Bingöl Üniversitesi Bilgis
 
 **Teknoloji:** Python 3 + Flask, SQLAlchemy, SQLite (yerel) / PostgreSQL (canlı), Bootstrap 5, pytest, Render
 **Canlı adres:** https://tarladan-sofraya.onrender.com
-**Sürüm:** `v0.8.1` (vize ara sürümü v0.8.0 + demo görselleri · [değişiklik günlüğü](CHANGELOG.md))
+**Sürüm:** `v0.8.2` (vize ara sürümü v0.8.0 + demo görselleri · [değişiklik günlüğü](CHANGELOG.md))
 **Belgeler:** [Mimari şema](docs/MIMARI.md) · [ER diyagramı](docs/ER_DIYAGRAMI.md) ·
 [Güvenlik notu (Hafta 5)](docs/GUVENLIK_NOTU.md) · [Üretici ve Ürün modülü (Hafta 6)](docs/MODUL_URETICI_URUN.md) ·
 [İlan, Sepet, Sipariş (Hafta 7)](docs/MODUL_ILAN_SEPET_SIPARIS.md) · [Canlı yayın rehberi (Hafta 7)](docs/CANLI_YAYIN.md) ·

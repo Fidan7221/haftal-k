@@ -336,11 +336,16 @@ def test_demo_products_have_sample_images(app, client, monkeypatch):
         assert os.path.isfile(os.path.join(app.static_folder, "img", product.image_path))
 
     html = client.get("/ilanlar").get_data(as_text=True)
-    assert "/static/img/demo/domates.png" in html
+    assert "/static/img/demo/domates.jpg" in html
 
-    # Canlıdaki gibi: ürünler önceden görselsiz eklenmiş olsun
+    # Canlıdaki gibi: ürünler önceden görselsiz veya eski görselle (v0.8.1 .png) eklenmiş olsun;
+    # üreticinin kendi yüklediği görsele ise dokunulmamalı
     for product in products:
         product.image_path = None
+    products[0].image_path = "demo/domates.png"
+    products[1].image_path = "products/uretici-yukledi.jpg"
     db.session.commit()
-    assert "6 görsel" in seed_demo()
-    assert all(p.image_path for p in Product.query.all())
+    assert "5 görsel" in seed_demo()
+    db.session.refresh(products[1])
+    assert products[1].image_path == "products/uretici-yukledi.jpg"
+    assert all(p.image_path.endswith(".jpg") for p in Product.query.all())

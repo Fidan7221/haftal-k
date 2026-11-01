@@ -32,16 +32,17 @@ PRODUCERS = [
     ]),
 ]
 
-# Hafta 8: Demo ürünlerinin örnek görselleri (app/static/img/demo/). Görseller projede
-# çizilmiş sade illüstrasyonlardır (telif sorunu yok) ve git'e eklenir. Render'ın ücretsiz
-# planında yüklenen dosyalar her yeniden kurulumda silindiği için uploads/ klasörü kullanılmaz.
+# Hafta 8: Demo ürünlerinin örnek fotoğrafları (app/static/img/demo/), git'e eklenir.
+# Render'ın ücretsiz planında yüklenen dosyalar her yeniden kurulumda silindiği için
+# uploads/ klasörü kullanılmaz. Fotoğraflar internetten, yalnızca eğitim amaçlı demo içindir
+# (kaynak notu: app/static/img/demo/KAYNAK.md).
 DEMO_IMAGES = {
-    "Salkım Domates": "demo/domates.png",
-    "Kapya Biber": "demo/biber.png",
-    "Çiçek Balı": "demo/bal.png",
-    "Gün Kurusu Kayısı": "demo/kayisi.png",
-    "Köy Tereyağı": "demo/tereyagi.png",
-    "Kuru Fasulye": "demo/fasulye.png",
+    "Salkım Domates": "demo/domates.jpg",
+    "Kapya Biber": "demo/biber.jpg",
+    "Çiçek Balı": "demo/bal.jpg",
+    "Gün Kurusu Kayısı": "demo/kayisi.jpg",
+    "Köy Tereyağı": "demo/tereyagi.jpg",
+    "Kuru Fasulye": "demo/fasulye.jpg",
 }
 
 CUSTOMER = ("musteri@example.com", "Demo Müşteri")
@@ -97,14 +98,17 @@ def seed_demo():
 
 
 def _add_missing_demo_images():
-    """Daha önce görselsiz eklenmiş demo ürünlerine görsel ekler (canlı sitede zaten var olanlar).
-    Yalnızca demo üreticilerin ürünlerine ve görseli BOŞ olanlara dokunur."""
+    """Demo ürünlerinin görselini günceller (canlı sitede zaten var olan ürünler için).
+    Yalnızca demo üreticilerin ürünlerine dokunur; görseli boşsa veya eski bir demo görseliyse
+    (ör. demo/domates.png -> demo/domates.jpg) değiştirir. Üreticinin kendi yüklediği görsele dokunmaz."""
     demo_emails = [email for email, *_ in PRODUCERS]
     products = (Product.query.join(ProducerProfile).join(User)
-                .filter(User.email.in_(demo_emails), Product.image_path.is_(None)).all())
+                .filter(User.email.in_(demo_emails)).all())
     count = 0
     for product in products:
-        if product.name in DEMO_IMAGES:
+        wanted = DEMO_IMAGES.get(product.name)
+        current = product.image_path
+        if wanted and current != wanted and (current is None or current.startswith("demo/")):
             product.image_path = DEMO_IMAGES[product.name]
             count += 1
     return count

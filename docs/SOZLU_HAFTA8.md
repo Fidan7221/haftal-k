@@ -109,7 +109,7 @@ Sonra Hafta 10-11'de fiyat geçmişi grafiği ve yapay zekâ ile fiyat tahmini (
 ## Ek sorular (gelebilir)
 
 **S: Neden 0.8.0? Neden 1.0.0 değil?**
-"Semantic Versioning: MAJOR.MINOR.PATCH. MAJOR 0 'henüz kararlı değil, geliştiriliyor' demek. Her haftalık modül yeni özellik, yani MINOR artar: Hafta 8 → 0.8.0. Nitekim v0.8.0'dan sonra demo ürünlerine örnek görsel ekledim; yeni modül olmadığı için yalnızca PATCH arttı: 0.8.1."
+"Semantic Versioning: MAJOR.MINOR.PATCH. MAJOR 0 'henüz kararlı değil, geliştiriliyor' demek. Her haftalık modül yeni özellik, yani MINOR artar: Hafta 8 → 0.8.0. Nitekim v0.8.0'dan sonra demo ürünlerine örnek görsel ekledim; yeni modül olmadığı için yalnızca PATCH arttı: 0.8.1, sonra fotoğraflarla 0.8.2."
 
 **S: Git etiketi ne işe yarar?**
 "Belirli bir commit'e kalıcı isim verir. Hoca 'vizede gösterdiğin kod' dediğinde `git checkout v0.8.0` ile tam o hâline dönebilirim. `-a` ile açıklamalı etiket attım; kimin, ne zaman attığını saklar. `git push` etiketleri göndermez, `git push origin v0.8.0` ayrıca gerekir."
