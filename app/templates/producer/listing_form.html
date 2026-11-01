@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% from "_macros.html" import render_field %}
+{% block title %}{{ "İlanı Düzenle" if listing else "Yeni İlan" }}{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 760px">
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb small">
+      <li class="breadcrumb-item"><a href="{{ url_for('producer.dashboard') }}" class="link-farm">Panel</a></li>
+      <li class="breadcrumb-item"><a href="{{ url_for('listing.my_listings') }}" class="link-farm">İlanlarım</a></li>
+      <li class="breadcrumb-item active" aria-current="page">{{ listing.title if listing else "Yeni ilan" }}</li>
+    </ol>
+  </nav>
+
+  <div class="card border-0 shadow-sm"><div class="card-body p-4">
+    <h1 class="h4 fw-bold mb-4">{{ "İlanı düzenle" if listing else "Yeni ilan aç" }}</h1>
+    <form method="post" novalidate>
+      {{ form.hidden_tag() }}
+      {% if listing %}
+        {{ render_field(form.product_id, disabled=True, help="İlanın ürünü değiştirilemez; farklı ürün için yeni ilan açın.") }}
+      {% else %}
+        {{ render_field(form.product_id, help="Parantez içinde, depoda henüz hiçbir ilana ayrılmamış miktar yazar.") }}
+      {% endif %}
+      {{ render_field(form.title, placeholder="Boş bırakırsanız ürün adı kullanılır") }}
+      <div class="row">
+        <div class="col-md-4">{{ render_field(form.price, icon="currency-exchange", type="number", step="0.01", min="0.01") }}</div>
+        <div class="col-md-4">{{ render_field(form.stock_quantity, type="number", step="0.01", min="0.01") }}</div>
+        <div class="col-md-4">{{ render_field(form.min_order_quantity, type="number", step="0.01", min="0.01") }}</div>
+      </div>
+      {{ render_field(form.end_date, type="date") }}
+      <p class="form-text">Fiyatı değiştirmek eski siparişleri etkilemez; sipariş anındaki fiyat siparişe kaydedilir.</p>
+      <div class="d-flex gap-2">
+        {{ form.submit(class="btn btn-farm fw-semibold") }}
+        <a href="{{ url_for('listing.my_listings') }}" class="btn btn-outline-secondary">Vazgeç</a>
+      </div>
+    </form>
+  </div></div>
+</div>
+{% endblock %}

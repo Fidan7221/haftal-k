@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% from "_macros.html" import render_pagination %}
+{% from "_shop_macros.html" import listing_card %}
+{% block title %}İlanlar{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <h1 class="h3 fw-bold mb-3"><i class="bi bi-shop text-farm"></i> Üreticiden taze ürünler</h1>
+
+  <!-- Arama ve kategori filtresi (GET formu) -->
+  <form method="get" class="row g-2 mb-4" role="search">
+    <div class="col-md-6">
+      <div class="input-group">
+        <span class="input-group-text"><i class="bi bi-search"></i></span>
+        <input type="search" name="q" value="{{ search }}" class="form-control" placeholder="Ürün veya ilan ara">
+      </div>
+    </div>
+    <div class="col-md-4">
+      <select name="kategori" class="form-select" aria-label="Kategori">
+        <option value="0">Tüm kategoriler</option>
+        {% for parent, children in categories %}
+          <option value="{{ parent.id }}" {{ 'selected' if parent.id == category_id }}>{{ parent.name }}</option>
+          {% for child in children %}
+            <option value="{{ child.id }}" {{ 'selected' if child.id == category_id }}>&nbsp;&nbsp;– {{ child.name }}</option>
+          {% endfor %}
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2 d-grid">
+      <button class="btn btn-outline-secondary" type="submit">Filtrele</button>
+    </div>
+  </form>
+
+  {% if pagination.items %}
+    <div class="row g-3">
+      {% for listing in pagination.items %}
+        <div class="col-sm-6 col-lg-4 col-xl-3">{{ listing_card(listing) }}</div>
+      {% endfor %}
+    </div>
+    <p class="text-muted small text-center mt-3 mb-0">Toplam {{ pagination.total }} ilan</p>
+    {{ render_pagination(pagination, "listing.index", q=search, kategori=category_id or 0) }}
+  {% else %}
+    <div class="text-center text-muted py-5">
+      <i class="bi bi-inbox display-5 d-block mb-2"></i>
+      {% if search or category_id %}
+        Aramanıza uyan ilan bulunamadı. <a href="{{ url_for('listing.index') }}" class="link-farm">Filtreyi temizle</a>
+      {% else %}
+        Şu anda satışta ilan yok.
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

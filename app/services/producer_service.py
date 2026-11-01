@@ -11,6 +11,7 @@ from decimal import Decimal
 from flask import current_app
 
 from app.models import Product, Unit
+from app.repositories.listing_repository import ListingRepository
 from app.repositories.product_repository import CategoryRepository, ProductRepository
 from app.services.errors import ServiceError
 from app.utils.uploads import delete_product_image, is_real_image, save_product_image
@@ -76,6 +77,16 @@ def _validate_product(category_id, unit, stock_quantity):
     return category
 
 
+def _check_listing_reserve(product, new_quantity, field):
+    """Hafta 7 kuralı: Depo stoğu, açık ilanlarda satışa ayrılmış miktarın altına inemez.
+    Aksi hâlde ilanda görünen ama depoda olmayan mal satılırdı."""
+    reserved = ListingRepository.open_stock_for_product(product.id)
+    if new_quantity < reserved:
+        raise ServiceError(
+            f"Bu ürünün açık ilanlarında {reserved.normalize():f} {product.unit} satışa ayrılmış; "
+            "stok bundan az olamaz. Önce ilan miktarını azaltın veya ilanı kapatın.", field=field)
+
+
 def _handle_image(image_file):
     """Yeni görsel geldiyse doğrular ve kaydeder; gelmediyse None döner."""
     if not image_file:
@@ -116,6 +127,7 @@ def update_product(product, category_id, name, unit, stock_quantity,
                    description=None, is_organic=False, is_active=True,
                    image_file=None, remove_image=False):
     category = _validate_product(category_id, unit, stock_quantity)
+    _check_listing_reserve(product, stock_quantity, field="stock_quantity")
     new_image = _handle_image(image_file)
     old_image = product.image_path
 
@@ -148,6 +160,7 @@ def update_stock(product, new_quantity):
     """
     if new_quantity is None or new_quantity < 0:
         raise ServiceError("Stok negatif olamaz.", field="quantity")
+    _check_listing_reserve(product, new_quantity, field="quantity")
     product.stock_quantity = new_quantity
     ProductRepository.commit()
     return product

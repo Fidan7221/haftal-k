@@ -14,7 +14,8 @@ main_bp = Blueprint("main", __name__)
 
 @main_bp.route("/")
 def index():
-    return render_template("main/index.html")
+    from app.services.listing_service import latest_listings
+    return render_template("main/index.html", latest_listings=latest_listings())
 
 
 @main_bp.route("/panel")
@@ -31,7 +32,10 @@ def dashboard():
 @main_bp.route("/musteri/panel")
 @role_required(RoleName.CUSTOMER)
 def customer_dashboard():
-    return render_template("customer/dashboard.html")
+    from app.services import cart_service, order_service
+    orders = order_service.customer_orders(current_user)
+    return render_template("customer/dashboard.html", recent_orders=orders[:5],
+                           cart_count=cart_service.item_count(current_user))
 
 
 @main_bp.route("/yonetici/panel")

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% from "_shop_macros.html" import tl %}
+{% block title %}İlanlarım{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+    <h1 class="h3 fw-bold mb-0"><i class="bi bi-megaphone text-farm"></i> İlanlarım</h1>
+    <a href="{{ url_for('listing.new_listing') }}" class="btn btn-farm"><i class="bi bi-plus-lg"></i> Yeni ilan</a>
+  </div>
+
+  {% if listings %}
+    <div class="card border-0 shadow-sm">
+      <div class="table-responsive">
+        <table class="table align-middle mb-0">
+          <thead class="table-light small">
+            <tr><th>İlan</th><th>Fiyat</th><th>Kalan</th><th>En az</th><th>Bitiş</th><th>Durum</th><th class="text-end">İşlem</th></tr>
+          </thead>
+          <tbody>
+            {% for listing in listings %}
+              <tr>
+                <td>
+                  <a href="{{ url_for('listing.detail', listing_id=listing.id) }}" class="fw-medium text-reset">{{ listing.title }}</a>
+                  <div class="small text-muted">{{ listing.product.name }}</div>
+                </td>
+                <td class="text-nowrap">{{ tl(listing.price) }} / {{ listing.product.unit }}</td>
+                <td class="text-nowrap">{{ listing.stock_quantity|qty }} {{ listing.product.unit }}</td>
+                <td class="text-nowrap">{{ listing.min_order_quantity|qty }}</td>
+                <td class="text-nowrap small">{{ listing.end_date.strftime('%d.%m.%Y') if listing.end_date else '—' }}</td>
+                <td><span class="badge text-bg-{{ 'success' if listing.is_available else 'secondary' }}">{{ listing.status_label }}</span></td>
+                <td class="text-end text-nowrap">
+                  <a href="{{ url_for('listing.edit_listing', listing_id=listing.id) }}" class="btn btn-sm btn-outline-secondary" aria-label="Düzenle"><i class="bi bi-pencil"></i></a>
+                  {% if listing.status == 'closed' %}
+                    <form method="post" action="{{ url_for('listing.listing_action', listing_id=listing.id, action='ac') }}" class="d-inline">
+                      {{ action_form.hidden_tag() }}
+                      <button class="btn btn-sm btn-outline-success" title="Tekrar aç"><i class="bi bi-play"></i></button>
+                    </form>
+                  {% else %}
+                    <form method="post" action="{{ url_for('listing.listing_action', listing_id=listing.id, action='kapat') }}" class="d-inline">
+                      {{ action_form.hidden_tag() }}
+                      <button class="btn btn-sm btn-outline-warning" title="Satışa kapat"><i class="bi bi-pause"></i></button>
+                    </form>
+                  {% endif %}
+                  <form method="post" action="{{ url_for('listing.listing_action', listing_id=listing.id, action='sil') }}" class="d-inline"
+                        onsubmit="return confirm('Bu ilan silinsin mi?');">
+                    {{ action_form.hidden_tag() }}
+                    <button class="btn btn-sm btn-outline-danger" aria-label="Sil"><i class="bi bi-trash"></i></button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% else %}
+    <div class="text-center text-muted py-5">
+      <i class="bi bi-megaphone display-5 d-block mb-2"></i>
+      Henüz ilanınız yok. <a href="{{ url_for('listing.new_listing') }}" class="link-farm">İlk ilanınızı açın</a>.
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

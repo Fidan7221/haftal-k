@@ -1,13 +1,37 @@
 {% extends "base.html" %}
+{% from "_shop_macros.html" import tl %}
 {% block title %}Müşteri Paneli{% endblock %}
 
 {% block content %}
 <div class="container py-4">
   <h1 class="h3 fw-bold mb-1"><i class="bi bi-basket2 text-farm"></i> Müşteri Paneli</h1>
-  <p class="text-muted">Merhaba {{ current_user.full_name }}, taze ürünler yakında burada.</p>
+  <p class="text-muted">Merhaba {{ current_user.full_name }}.</p>
 
-  <div class="alert alert-light border mb-0">
-    <i class="bi bi-info-circle"></i> İlanlar, sepet ve siparişler Hafta 7'de bu panele eklenecek.
+  <div class="d-flex flex-wrap gap-2 mb-4">
+    <a href="{{ url_for('listing.index') }}" class="btn btn-farm"><i class="bi bi-shop"></i> İlanlara göz at</a>
+    <a href="{{ url_for('cart.view') }}" class="btn btn-outline-secondary"><i class="bi bi-cart3"></i> Sepetim ({{ cart_count }})</a>
+    <a href="{{ url_for('order.customer_list') }}" class="btn btn-outline-secondary"><i class="bi bi-receipt"></i> Tüm siparişlerim</a>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-white fw-semibold">Son siparişler</div>
+    {% if recent_orders %}
+      <ul class="list-group list-group-flush">
+        {% for order in recent_orders %}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <a href="{{ url_for('order.customer_detail', order_id=order.id) }}" class="text-reset">
+              #{{ order.id }} · {{ order.producer.farm_name if order.producer else '' }}
+            </a>
+            <span>
+              <span class="me-2">{{ tl(order.total_amount) }}</span>
+              <span class="badge text-bg-{{ order.status_badge }}">{{ order.status_label }}</span>
+            </span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="card-body text-muted">Henüz siparişiniz yok.</div>
+    {% endif %}
   </div>
 </div>
 {% endblock %}

@@ -1,4 +1,8 @@
-"""Sepet modelleri (carts, cart_items tabloları). Akışı Hafta 7'de yazılacak."""
+"""Sepet modelleri (carts, cart_items tabloları).
+
+Her müşterinin TEK sepeti vardır (user_id UNIQUE). Sepet kalemi ilana bağlanır.
+Sepete eklemek stok DÜŞMEZ; stok yalnızca sipariş oluşunca düşer (Hafta 7).
+"""
 from app.extensions import db
 from app.models.base import BaseModel
 
@@ -14,6 +18,10 @@ class Cart(BaseModel):
     @property
     def total(self):
         return sum((item.subtotal for item in self.items), 0)
+
+    @property
+    def item_count(self):
+        return len(self.items)
 
 
 class CartItem(BaseModel):

@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% from "_macros.html" import product_image, render_field %}
+{% from "_shop_macros.html" import tl %}
+{% block title %}{{ listing.title }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb small">
+      <li class="breadcrumb-item"><a href="{{ url_for('listing.index') }}" class="link-farm">İlanlar</a></li>
+      <li class="breadcrumb-item">{{ listing.product.category.name }}</li>
+      <li class="breadcrumb-item active" aria-current="page">{{ listing.title }}</li>
+    </ol>
+  </nav>
+
+  <div class="row g-4">
+    <div class="col-md-5">
+      {{ product_image(listing.product, "product-thumb rounded-3 shadow-sm") }}
+    </div>
+    <div class="col-md-7">
+      <div class="d-flex gap-2 mb-2">
+        <span class="badge text-bg-{{ 'success' if listing.is_available else 'secondary' }}">
+          {{ listing.status_label }}
+        </span>
+        {% if listing.product.is_organic %}<span class="badge text-bg-success">Organik</span>{% endif %}
+      </div>
+      <h1 class="h3 fw-bold">{{ listing.title }}</h1>
+      <p class="text-muted mb-2">
+        <i class="bi bi-tree"></i> {{ listing.producer.farm_name }} · <i class="bi bi-geo-alt"></i> {{ listing.producer.region }}
+        {% if listing.producer.is_verified %}<span class="badge text-bg-success ms-1"><i class="bi bi-patch-check"></i> Doğrulanmış</span>{% endif %}
+      </p>
+      <div class="display-6 fw-bold text-farm mb-3">{{ tl(listing.price) }} <small class="fs-5 text-muted fw-normal">/ {{ listing.product.unit }}</small></div>
+
+      <ul class="list-unstyled small mb-3">
+        <li><i class="bi bi-box-seam"></i> Stokta: <strong>{{ listing.stock_quantity|qty }} {{ listing.product.unit }}</strong></li>
+        <li><i class="bi bi-cart-check"></i> En az sipariş: <strong>{{ listing.min_order_quantity|qty }} {{ listing.product.unit }}</strong></li>
+        {% if listing.end_date %}<li><i class="bi bi-calendar-event"></i> Son gün: {{ listing.end_date.strftime('%d.%m.%Y') }}</li>{% endif %}
+      </ul>
+      {% if listing.product.description %}<p>{{ listing.product.description }}</p>{% endif %}
+
+      {% if listing.is_available %}
+        {% if current_user.is_authenticated and current_user.is_customer %}
+          <form method="post" action="{{ url_for('cart.add', listing_id=listing.id) }}" class="row g-2 align-items-end" novalidate>
+            {{ form.hidden_tag() }}
+            <div class="col-sm-5">
+              <label class="form-label fw-medium" for="quantity">Miktar ({{ listing.product.unit }})</label>
+              {{ form.quantity(class="form-control", type="number", step="0.01" if listing.product.unit in ("kg", "litre") else "1",
+                               min=listing.min_order_quantity|qty|replace(',', '.'),
+                               max=listing.stock_quantity|qty|replace(',', '.')) }}
+            </div>
+            <div class="col-sm-7 d-grid">
+              <button type="submit" class="btn btn-farm"><i class="bi bi-cart-plus"></i> Sepete ekle</button>
+            </div>
+          </form>
+        {% elif not current_user.is_authenticated %}
+          <a href="{{ url_for('auth.login', next=request.path) }}" class="btn btn-farm"><i class="bi bi-box-arrow-in-right"></i> Satın almak için giriş yapın</a>
+        {% else %}
+          <div class="alert alert-light border small mb-0">Satın alma yalnızca müşteri hesaplarına açıktır.</div>
+        {% endif %}
+      {% else %}
+        <div class="alert alert-secondary mb-0">Bu ilan şu anda satışta değil.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -9,7 +9,9 @@ from decimal import Decimal
 import click
 from flask import Flask, render_template
 
-from config import config_by_name
+from werkzeug.middleware.proxy_fix import ProxyFix
+
+from config import DEV_SECRET_KEY, config_by_name
 from app.extensions import csrf, db, login_manager, migrate
 
 
@@ -19,6 +21,15 @@ def create_app(config_name=None):
 
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_object(config_by_name[config_name])
+
+    if config_name == "production":
+        # Canlıda SECRET_KEY ortam değişkeni ZORUNLU. Unutulursa uygulama hiç açılmaz;
+        # herkesin bildiği geliştirme anahtarıyla yayına çıkmaktan iyidir.
+        if not app.config["SECRET_KEY"] or app.config["SECRET_KEY"] == DEV_SECRET_KEY:
+            raise RuntimeError("SECRET_KEY ortam değişkeni tanımlanmamış (canlı ortam).")
+        # Render isteği önce kendi vekil sunucusunda karşılar; gerçek adresi ve https
+        # bilgisini X-Forwarded-* başlıklarından okumak için ProxyFix kullanılır.
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
     # instance/ klasörü yoksa oluştur (SQLite dosyası burada durur)
     os.makedirs(app.instance_path, exist_ok=True)
@@ -59,11 +70,17 @@ def register_blueprints(app):
     from app.routes.auth_routes import auth_bp
     from app.routes.main_routes import main_bp
     from app.routes.producer_routes import producer_bp
+    from app.routes.listing_routes import listing_bp
+    from app.routes.cart_routes import cart_bp
+    from app.routes.order_routes import order_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(producer_bp)  # Hafta 6
     app.register_blueprint(admin_bp)     # Hafta 6
+    app.register_blueprint(listing_bp)   # Hafta 7: ilanlar
+    app.register_blueprint(cart_bp)      # Hafta 7: sepet ve ödeme
+    app.register_blueprint(order_bp)     # Hafta 7: siparişler
 
 
 def register_error_handlers(app):
@@ -91,6 +108,13 @@ def register_cli_commands(app):
 
         seed_all()
         print("Başlangıç verileri eklendi.")
+
+    @app.cli.command("seed-demo")
+    def seed_demo():
+        """Canlı sunumda boş görünmesin diye KVKK uyumlu sentetik demo verisi ekler (Hafta 7)."""
+        from scripts.demo_data import seed_demo as run
+
+        print(run())
 
     @app.cli.command("create-admin")
     @click.option("--name", prompt="Ad Soyad")

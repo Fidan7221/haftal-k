@@ -60,7 +60,9 @@ def _product_form_kwargs(form):
 @role_required(RoleName.PRODUCER)
 def dashboard():
     profile = _profile()
+    from app.services.order_service import waiting_count
     return render_template("producer/dashboard.html", profile=profile,
+                           waiting_orders=waiting_count(profile),
                            **producer_service.dashboard_data(profile))
 
 

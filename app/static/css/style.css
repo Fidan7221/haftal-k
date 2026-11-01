@@ -91,3 +91,15 @@ body { background: #f6f8f4; }
 
 .stat-warn { border-left-color: #d97706; }
 .table-group-start td { border-top: 2px solid #dee2e6; }
+
+/* --- Hafta 7: sipariş durum adımları --- */
+.order-step {
+  padding: .35rem .75rem;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid #dee2e6;
+  color: #6c757d;
+  font-size: .875rem;
+}
+.order-step.is-done { background: var(--farm-soft); border-color: var(--farm); color: var(--farm-dark); }
+.navbar .nav-link, .navbar .navbar-text { white-space: nowrap; }

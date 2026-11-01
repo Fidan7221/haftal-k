@@ -25,9 +25,14 @@
       <div class="collapse navbar-collapse" id="mainNav">
         <ul class="navbar-nav me-auto">
           <li class="nav-item"><a class="nav-link" href="{{ url_for('main.index') }}">Ana Sayfa</a></li>
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('listing.index') }}">İlanlar</a></li>
           {% if current_user.is_authenticated and current_user.is_producer %}
             <li class="nav-item"><a class="nav-link" href="{{ url_for('producer.products') }}">Ürünlerim</a></li>
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('listing.my_listings') }}">İlanlarım</a></li>
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('order.producer_list') }}">Siparişler</a></li>
             <li class="nav-item"><a class="nav-link" href="{{ url_for('producer.edit_profile') }}">Profilim</a></li>
+          {% elif current_user.is_authenticated and current_user.is_customer %}
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('order.customer_list') }}">Siparişlerim</a></li>
           {% elif current_user.is_authenticated and current_user.is_admin %}
             <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.categories') }}">Kategoriler</a></li>
           {% endif %}
@@ -35,6 +40,14 @@
 
         <ul class="navbar-nav align-items-lg-center gap-lg-2">
           {% if current_user.is_authenticated %}
+            {% if current_user.is_customer %}
+              <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('cart.view') }}">
+                  <i class="bi bi-cart3"></i> Sepet
+                  {% if cart_count %}<span class="badge rounded-pill text-bg-light text-farm">{{ cart_count }}</span>{% endif %}
+                </a>
+              </li>
+            {% endif %}
             <li class="nav-item">
               <a class="nav-link" href="{{ url_for('main.dashboard') }}">
                 <i class="bi bi-speedometer2"></i> Panelim

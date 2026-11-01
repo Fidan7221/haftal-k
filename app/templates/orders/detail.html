@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% from "_shop_macros.html" import tl %}
+{% block title %}Sipariş #{{ order.id }}{% endblock %}
+
+{% set steps = ["pending", "paid", "shipped", "delivered"] %}
+
+{% block content %}
+<div class="container py-4">
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb small">
+      <li class="breadcrumb-item">
+        <a href="{{ url_for('order.producer_list' if producer_view else 'order.customer_list') }}" class="link-farm">
+          {{ "Gelen siparişler" if producer_view else "Siparişlerim" }}</a>
+      </li>
+      <li class="breadcrumb-item active" aria-current="page">#{{ order.id }}</li>
+    </ol>
+  </nav>
+
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 fw-bold mb-0">Sipariş #{{ order.id }}</h1>
+    <span class="badge fs-6 text-bg-{{ order.status_badge }}">{{ order.status_label }}</span>
+  </div>
+
+  <!-- Yaşam döngüsü göstergesi -->
+  {% if order.status != "cancelled" %}
+    <ol class="order-steps list-unstyled d-flex flex-wrap gap-2 mb-4">
+      {% for step in steps %}
+        {% set reached = steps.index(step) <= steps.index(order.status) %}
+        <li class="order-step {{ 'is-done' if reached }}">
+          <i class="bi bi-{{ 'check-circle-fill' if reached else 'circle' }}"></i> {{ statuses.LABELS[step] }}
+        </li>
+      {% endfor %}
+    </ol>
+  {% endif %}
+
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white fw-semibold">
+          {% if order.producer %}<i class="bi bi-tree text-farm"></i> {{ order.producer.farm_name }}{% endif %}
+        </div>
+        <div class="table-responsive">
+          <table class="table mb-0 align-middle">
+            <thead class="table-light small"><tr><th>Ürün</th><th>Miktar</th><th>Birim fiyat</th><th class="text-end">Tutar</th></tr></thead>
+            <tbody>
+              {% for item in order.items %}
+                <tr>
+                  <td>{{ item.listing.title }}</td>
+                  <td class="text-nowrap">{{ item.quantity|qty }} {{ item.listing.product.unit }}</td>
+                  <td class="text-nowrap">{{ tl(item.unit_price) }}</td>
+                  <td class="text-end text-nowrap">{{ tl(item.subtotal) }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+            <tfoot><tr><th colspan="3">Toplam</th><th class="text-end text-farm">{{ tl(order.total_amount) }}</th></tr></tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm mb-3"><div class="card-body small">
+        <div class="mb-1"><strong>Tarih:</strong> {{ order.created_at.strftime('%d.%m.%Y %H:%M') }}</div>
+        {% if producer_view %}<div class="mb-1"><strong>Müşteri:</strong> {{ order.customer.full_name }}</div>{% endif %}
+        <div class="mb-1"><strong>Teslimat adresi:</strong> {{ order.shipping_address }}</div>
+        {% if order.note %}<div class="mb-1"><strong>Not:</strong> {{ order.note }}</div>{% endif %}
+        {% if order.payment %}
+          {% set payment_labels = {"initiated": "Başlatıldı", "success": "Başarılı", "failed": "Başarısız", "refunded": "İade edildi"} %}
+          <div class="mt-2"><strong>Ödeme:</strong> {{ payment_labels.get(order.payment.status, order.payment.status) }}
+            <span class="text-muted">· {{ order.payment.transaction_ref }}</span></div>
+        {% endif %}
+      </div></div>
+
+      {% if actions %}
+        <div class="card border-0 shadow-sm"><div class="card-body d-grid gap-2">
+          {% for new_status, label in actions %}
+            <form method="post" action="{{ url_for('order.change_status', order_id=order.id) }}" class="d-grid"
+                  {% if new_status == 'cancelled' %}onsubmit="return confirm('Sipariş iptal edilsin mi? Stok geri eklenir.');"{% endif %}>
+              {{ status_form.csrf_token }}
+              <input type="hidden" name="new_status" value="{{ new_status }}">
+              <button class="btn {{ 'btn-outline-danger' if new_status == 'cancelled' else 'btn-farm' }}">{{ label }}</button>
+            </form>
+          {% endfor %}
+        </div></div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

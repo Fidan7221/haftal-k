@@ -3,9 +3,11 @@
 Üreticinin (çiftçinin) ürünlerini aracısız sattığı, tüketicinin hal fiyatlarını takip edebildiği web platformu.
 Bilgisayar Uygulamaları I — Proje Tabanlı Ders, Bingöl Üniversitesi Bilgisayar Programcılığı.
 
-**Teknoloji:** Python 3 + Flask, SQLAlchemy, SQLite, Bootstrap 5, pytest
+**Teknoloji:** Python 3 + Flask, SQLAlchemy, SQLite (yerel) / PostgreSQL (canlı), Bootstrap 5, pytest, Render
+**Canlı adres:** _(Render'a yükleyince buraya yazın: https://tarladan-sofraya.onrender.com)_
 **Belgeler:** [Mimari şema](docs/MIMARI.md) · [ER diyagramı](docs/ER_DIYAGRAMI.md) ·
-[Güvenlik notu (Hafta 5)](docs/GUVENLIK_NOTU.md) · [Üretici ve Ürün modülü (Hafta 6)](docs/MODUL_URETICI_URUN.md)
+[Güvenlik notu (Hafta 5)](docs/GUVENLIK_NOTU.md) · [Üretici ve Ürün modülü (Hafta 6)](docs/MODUL_URETICI_URUN.md) ·
+[İlan, Sepet, Sipariş (Hafta 7)](docs/MODUL_ILAN_SEPET_SIPARIS.md) · [Canlı yayın rehberi (Hafta 7)](docs/CANLI_YAYIN.md)
 
 ## Haftalara göre durum
 
@@ -15,6 +17,7 @@ Bilgisayar Uygulamaları I — Proje Tabanlı Ders, Bingöl Üniversitesi Bilgis
 | 4 | Veritabanı tasarımı ve veri erişim katmanı | `migrations/*.sql`, `src/` (Node.js + SQLite), aşağıdaki "Hafta 4" bölümü |
 | 5 | Kullanıcı yönetimi ve kimlik doğrulama | `app/services/auth_service.py`, `app/utils/decorators.py`, `docs/GUVENLIK_NOTU.md` |
 | 6 | Üretici ve ürün kaydı | `app/services/producer_service.py`, `app/routes/producer_routes.py`, `docs/MODUL_URETICI_URUN.md` |
+| 7 | İlan, sepet, sipariş + canlı yayın | `app/services/listing_service.py`, `cart_service.py`, `order_service.py`, `render.yaml`, `docs/MODUL_ILAN_SEPET_SIPARIS.md`, `docs/CANLI_YAYIN.md` |
 
 ## Flask uygulamasını çalıştırma (VS Code terminali)
 
@@ -24,11 +27,11 @@ venv\Scripts\activate            # Windows
 pip install -r requirements.txt
 copy .env.example .env            # sonra .env içindeki SECRET_KEY'i değiştir
 
-flask db init                     # yalnızca İLK seferde (migrations_flask/ klasörünü oluşturur)
-flask db migrate -m "ilk tablolar"
-flask db upgrade                  # tabloları oluşturur
+flask db upgrade                  # tabloları migrations_flask/ içindeki migration ile oluşturur
+                                  # (Eski instance/app.db'niz varsa bir kez: flask db stamp head)
 flask seed-db                     # roller ve kategoriler
 flask create-admin                # yönetici hesabı (isteğe bağlı)
+flask seed-demo                   # demo üretici/müşteri + ilanlar (.env'de DEMO_PASSWORD gerekir)
 
 python run.py                     # http://127.0.0.1:5000
 python -m pytest                  # testler

@@ -16,14 +16,33 @@ BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 load_dotenv(os.path.join(BASE_DIR, ".env"))
 
 
+DEV_SECRET_KEY = "gelistirme-icin-gecici-anahtar"
+
+
+def database_url():
+    """DATABASE_URL ortam değişkenini SQLAlchemy'nin anlayacağı biçime getirir (Hafta 7).
+
+    - Boşsa: yerelde instance/app.db (SQLite) kullanılır.
+    - Render/Neon gibi servisler "postgres://..." veya "postgresql://..." verir;
+      SQLAlchemy'ye hangi sürücüyü (psycopg 3) kullanacağını söylemek için
+      başını "postgresql+psycopg://" yaparız.
+    """
+    url = os.environ.get("DATABASE_URL", "").strip()
+    if not url:
+        return "sqlite:///" + os.path.join(BASE_DIR, "instance", "app.db")
+    if url.startswith("postgres://"):
+        url = "postgresql+psycopg://" + url[len("postgres://"):]
+    elif url.startswith("postgresql://"):
+        url = "postgresql+psycopg://" + url[len("postgresql://"):]
+    return url
+
+
 class Config:
     """Tüm ortamların ortak ayarları."""
 
-    SECRET_KEY = os.environ.get("SECRET_KEY", "gelistirme-icin-gecici-anahtar")
+    SECRET_KEY = os.environ.get("SECRET_KEY", DEV_SECRET_KEY)
 
-    SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL") or (
-        "sqlite:///" + os.path.join(BASE_DIR, "instance", "app.db")
-    )
+    SQLALCHEMY_DATABASE_URI = database_url()
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # Oturum ve çerez güvenliği (Hafta 5)
@@ -67,7 +86,11 @@ class ProductionConfig(Config):
     DEBUG = False
     SESSION_COOKIE_SECURE = True   # Yayında çerezler yalnızca HTTPS ile gönderilir
     REMEMBER_COOKIE_SECURE = True
-    USE_MOCK_APIS = False
+    # Bulut veri tabanı boşta kalınca bağlantıyı kapatabilir; her istekte bağlantı sınanır
+    SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True, "pool_recycle": 280}
+    # Hafta 9'da gerçek API anahtarları girilince False yapılacak. Şimdilik canlıda da
+    # sahte (mock) ödeme kullanılıyor; aksi hâlde canlı sitede ödeme adımı çalışmazdı.
+    USE_MOCK_APIS = True
 
 
 config_by_name = {

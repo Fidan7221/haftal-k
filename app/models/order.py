@@ -1,4 +1,8 @@
-"""Sipariş modelleri (orders, order_items tabloları). Akışı Hafta 7'de yazılacak."""
+"""Sipariş modelleri (orders, order_items tabloları).
+
+Durum geçişleri (hangi durumdan hangisine, kim tarafından) Hafta 7'de
+app/services/order_service.py içinde tek bir tabloda tanımlandı.
+"""
 from app.extensions import db
 from app.models.base import BaseModel
 
@@ -11,6 +15,19 @@ class OrderStatus:
     CANCELLED = "cancelled"    # İptal edildi
 
     ALL = (PENDING, PAID, SHIPPED, DELIVERED, CANCELLED)
+
+    # Ekranda gösterilecek Türkçe ad ve Bootstrap rozet rengi (Hafta 7)
+    LABELS = {
+        PENDING: "Ödeme bekleniyor",
+        PAID: "Ödendi · hazırlanıyor",
+        SHIPPED: "Kargoda",
+        DELIVERED: "Teslim edildi",
+        CANCELLED: "İptal edildi",
+    }
+    BADGES = {
+        PENDING: "warning", PAID: "info", SHIPPED: "primary",
+        DELIVERED: "success", CANCELLED: "secondary",
+    }
 
 
 class Order(BaseModel):
@@ -27,6 +44,19 @@ class Order(BaseModel):
     payment = db.relationship(
         "Payment", back_populates="order", uselist=False, cascade="all, delete-orphan"
     )
+
+    @property
+    def producer(self):
+        """Sepet ödeme anında üreticiye göre bölündüğü için her siparişin tek üreticisi vardır."""
+        return self.items[0].producer if self.items else None
+
+    @property
+    def status_label(self):
+        return OrderStatus.LABELS.get(self.status, self.status)
+
+    @property
+    def status_badge(self):
+        return OrderStatus.BADGES.get(self.status, "light")
 
 
 class OrderItem(BaseModel):

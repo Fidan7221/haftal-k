@@ -1,0 +1,36 @@
+# Render "Blueprint" dosyası (Hafta 7 - Canlı yayın)
+# Render bu dosyayı okuyup web servisini ve PostgreSQL veri tabanını TEK TIKLA kurar.
+# Anlatım: docs/CANLI_YAYIN.md
+
+databases:
+  - name: tarladan-sofraya-db
+    plan: free                 # Ücretsiz PostgreSQL (Render'da 30 gün sonra süresi dolar)
+    databaseName: tarladan_sofraya
+    user: tarladan
+
+services:
+  - type: web
+    name: tarladan-sofraya
+    runtime: python
+    plan: free
+    region: frankfurt          # Türkiye'ye en yakın bölge
+    buildCommand: pip install -r requirements.txt
+    # Her açılışta: 1) tabloları migration ile güncelle  2) roller/kategoriler
+    #               3) demo verisi (yalnızca ilk sefer)    4) web sunucusunu başlat
+    startCommand: flask db upgrade && flask seed-db && flask seed-demo && gunicorn run:app --bind 0.0.0.0:$PORT
+    healthCheckPath: /
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      - key: FLASK_APP
+        value: run.py
+      - key: FLASK_ENV
+        value: production      # config.py -> ProductionConfig (DEBUG kapalı, güvenli çerez)
+      - key: SECRET_KEY
+        generateValue: true    # Render uzun rastgele bir anahtar üretir; kimse görmez
+      - key: DATABASE_URL
+        fromDatabase:          # Veri tabanı adresi otomatik bağlanır (parolayı kodda tutmayız)
+          name: tarladan-sofraya-db
+          property: connectionString
+      - key: DEMO_PASSWORD
+        sync: false            # Render kurulumda bu değeri SİZE sorar (koda yazılmaz)

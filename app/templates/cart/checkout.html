@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% from "_macros.html" import render_field %}
+{% from "_shop_macros.html" import tl %}
+{% block title %}Siparişi Tamamla{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <h1 class="h3 fw-bold mb-3"><i class="bi bi-bag-check text-farm"></i> Siparişi tamamla</h1>
+  <div class="row g-4">
+    <div class="col-lg-7">
+      <div class="card border-0 shadow-sm"><div class="card-body p-4">
+        <form method="post" novalidate>
+          {{ form.hidden_tag() }}
+          {{ render_field(form.shipping_address, rows=3, placeholder="Mahalle, sokak, no, ilçe / il") }}
+          {{ render_field(form.note, placeholder="Örn. Akşam 18:00'den sonra teslim") }}
+          <div class="alert alert-light border small">
+            <i class="bi bi-info-circle"></i> Sipariş "Ödeme bekleniyor" durumunda oluşur. Ödeme sayfası Hafta 9'da
+            gerçek ödeme sistemine bağlanacak; şimdilik sipariş sayfasındaki deneme ödemesi kullanılır.
+          </div>
+          {{ form.submit(class="btn btn-farm fw-semibold px-4") }}
+          <a href="{{ url_for('cart.view') }}" class="btn btn-outline-secondary">Sepete dön</a>
+        </form>
+      </div></div>
+    </div>
+    <div class="col-lg-5">
+      <div class="card border-0 shadow-sm"><div class="card-body">
+        <h2 class="h6 fw-semibold mb-3">Sipariş özeti</h2>
+        {% for producer, group_items in groups.items() %}
+          <div class="small fw-semibold text-farm mt-2">{{ producer.farm_name }}</div>
+          {% for item in group_items %}
+            <div class="d-flex justify-content-between small">
+              <span>{{ item.listing.title }} × {{ item.quantity|qty }} {{ item.listing.product.unit }}</span>
+              <span>{{ tl(item.subtotal) }}</span>
+            </div>
+          {% endfor %}
+        {% endfor %}
+        <hr>
+        <div class="d-flex justify-content-between fw-bold"><span>Toplam</span><span class="text-farm">{{ tl(total) }}</span></div>
+      </div></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
