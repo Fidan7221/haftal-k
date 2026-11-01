@@ -9,8 +9,8 @@
   <nav aria-label="breadcrumb">
     <ol class="breadcrumb small">
       <li class="breadcrumb-item">
-        <a href="{{ url_for('order.producer_list' if producer_view else 'order.customer_list') }}" class="link-farm">
-          {{ "Gelen siparişler" if producer_view else "Siparişlerim" }}</a>
+        <a href="{{ url_for('admin.orders' if admin_view else ('order.producer_list' if producer_view else 'order.customer_list')) }}" class="link-farm">
+          {{ "Tüm siparişler" if admin_view else ("Gelen siparişler" if producer_view else "Siparişlerim") }}</a>
       </li>
       <li class="breadcrumb-item active" aria-current="page">#{{ order.id }}</li>
     </ol>
@@ -62,6 +62,7 @@
       <div class="card border-0 shadow-sm mb-3"><div class="card-body small">
         <div class="mb-1"><strong>Tarih:</strong> {{ order.created_at.strftime('%d.%m.%Y %H:%M') }}</div>
         {% if producer_view %}<div class="mb-1"><strong>Müşteri:</strong> {{ order.customer.full_name }}</div>{% endif %}
+        {% if admin_view and order.producer %}<div class="mb-1"><strong>Üretici:</strong> {{ order.producer.farm_name }}</div>{% endif %}
         <div class="mb-1"><strong>Teslimat adresi:</strong> {{ order.shipping_address }}</div>
         {% if order.note %}<div class="mb-1"><strong>Not:</strong> {{ order.note }}</div>{% endif %}
         {% if order.payment %}

@@ -97,6 +97,11 @@ def run_migrations_online():
     connectable = get_engine()
 
     with connectable.connect() as connection:
+        # Hafta 8: Uygulama SQLite'ta yabancı anahtar denetimini açıyor (app/__init__.py).
+        # SQLite'ta ALTER TABLE "batch" modunda tabloyu kopyalayıp eskisini sildiği için
+        # migration sırasında denetim geçici olarak kapatılır (Alembic belgelerinin önerisi).
+        if connection.dialect.name == "sqlite":
+            connection.exec_driver_sql("PRAGMA foreign_keys=OFF")
         context.configure(
             connection=connection,
             target_metadata=get_metadata(),

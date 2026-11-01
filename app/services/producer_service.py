@@ -11,6 +11,7 @@ from decimal import Decimal
 from flask import current_app
 
 from app.models import Product, Unit
+from app.repositories.cart_repository import CartRepository
 from app.repositories.listing_repository import ListingRepository
 from app.repositories.product_repository import CategoryRepository, ProductRepository
 from app.services.errors import ServiceError
@@ -127,6 +128,11 @@ def update_product(product, category_id, name, unit, stock_quantity,
                    description=None, is_organic=False, is_active=True,
                    image_file=None, remove_image=False):
     category = _validate_product(category_id, unit, stock_quantity)
+    # Hafta 8 düzeltmesi (Hafta 6 + Hafta 7 entegrasyonu): İlanı olan ürünün birimi değişirse
+    # "2,5 kg" ilan bir anda "2,5 adet" olur, eski siparişler de yanlış birimle görünür.
+    if unit != product.unit and product.listings:
+        raise ServiceError("Bu ürünün ilanları olduğu için birimi değiştirilemez. "
+                           "Farklı birimle satmak için yeni ürün ekleyin.", field="unit")
     _check_listing_reserve(product, stock_quantity, field="stock_quantity")
     new_image = _handle_image(image_file)
     old_image = product.image_path
@@ -174,6 +180,11 @@ def delete_product(product):
         return "archived"
 
     image_path = product.image_path
+    # Hafta 8 düzeltmesi: Ürün silinince ilanları da (cascade) silinir. Ama bir müşterinin
+    # SEPETİNDE bu ilan varsa sepet kalemi sahipsiz kalıyordu -> 500 hatası (IntegrityError).
+    # Bu yüzden önce ilişkili sepet kalemleri silinir, sonra ürün (ilişkili kayıtlar önce).
+    for listing in product.listings:
+        CartRepository.delete_items_for_listing(listing.id)
     ProductRepository.delete(product)  # İlanlar cascade ile birlikte silinir
     ProductRepository.commit()
     delete_product_image(image_path, _upload_root())

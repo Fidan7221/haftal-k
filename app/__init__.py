@@ -8,11 +8,35 @@ from decimal import Decimal
 
 import click
 from flask import Flask, render_template
+from sqlalchemy import event
+from sqlalchemy.engine import Engine
 
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from config import DEV_SECRET_KEY, config_by_name
 from app.extensions import csrf, db, login_manager, migrate
+
+# Hafta 8: Ara sürüm numarası (Semantic Versioning: MAJOR.MINOR.PATCH).
+# 0.x.y = henüz kararlı 1.0 değil; MINOR her yeni modülde, PATCH her hata düzeltmesinde artar.
+# Git etiketiyle (git tag v0.8.0) aynı tutulur; sayfanın alt bilgisinde görünür.
+__version__ = "0.8.0"
+
+
+@event.listens_for(Engine, "connect")
+def _sqlite_foreign_keys_on(dbapi_connection, connection_record):
+    """Hafta 8 düzeltmesi: SQLite yabancı anahtar (FOREIGN KEY) kısıtlarını VARSAYILAN OLARAK
+    DENETLEMEZ; her bağlantıda "PRAGMA foreign_keys = ON" demek gerekir (Hafta 4'te Node.js
+    tarafında db.js bunu yapıyordu, Flask tarafında unutulmuştu).
+
+    Sonuç: yerelde (SQLite) hatalı silme sessizce geçiyor, canlıda (PostgreSQL) patlıyordu.
+    Bu ayarla iki ortam aynı davranır. PostgreSQL bağlantısında hiçbir şey yapılmaz.
+    """
+    import sqlite3
+
+    if isinstance(dbapi_connection, sqlite3.Connection):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys = ON")
+        cursor.close()
 
 
 def create_app(config_name=None):
@@ -54,6 +78,11 @@ def create_app(config_name=None):
 
 
 def register_template_filters(app):
+    @app.context_processor
+    def inject_version():
+        """Her şablonda {{ app_version }} kullanılabilsin (alt bilgide gösterilir)."""
+        return {"app_version": __version__}
+
     @app.template_filter("qty")
     def format_quantity(value):
         """Miktarı Türkçe biçimde yazar: Decimal('12.50') -> '12,5', Decimal('100.00') -> '100'"""

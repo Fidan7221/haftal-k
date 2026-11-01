@@ -1,11 +1,14 @@
-"""Yönetici rotaları (Hafta 6: kategori yönetimi)."""
-from flask import Blueprint, abort, flash, redirect, render_template, url_for
+"""Yönetici rotaları (Hafta 6: kategori yönetimi, Hafta 8: panel özeti ve sipariş takibi)."""
+from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
+from flask_login import current_user
 
 from app.forms.admin_forms import CategoryForm
 from app.forms.producer_forms import DeleteForm
-from app.models import RoleName
+from app.forms.shop_forms import OrderStatusForm
+from app.models import OrderStatus, RoleName
+from app.repositories.order_repository import OrderRepository, StatsRepository
 from app.repositories.product_repository import CategoryRepository
-from app.services import category_service
+from app.services import category_service, order_service
 from app.services.errors import ServiceError
 from app.utils.decorators import role_required
 from app.utils.forms import show_service_error
@@ -19,6 +22,40 @@ def _category_or_404(category_id):
         abort(404)
     return category
 
+
+# --- Hafta 8: Panel ve sipariş takibi ----------------------------------------
+
+@admin_bp.route("/panel")
+@role_required(RoleName.ADMIN)
+def dashboard():
+    return render_template("admin/dashboard.html", stats=StatsRepository.get_summary_stats(),
+                           recent_orders=StatsRepository.recent_orders(limit=5),
+                           statuses=OrderStatus)
+
+
+@admin_bp.route("/siparisler")
+@role_required(RoleName.ADMIN)
+def orders():
+    status = request.args.get("durum")
+    if status not in OrderStatus.ALL:
+        status = None
+    return render_template("orders/list.html", orders=StatsRepository.recent_orders(limit=200, status=status),
+                           producer_view=True, admin_view=True, status_filter=status,
+                           statuses=OrderStatus)
+
+
+@admin_bp.route("/siparisler/<int:order_id>")
+@role_required(RoleName.ADMIN)
+def order_detail(order_id):
+    order = OrderRepository.get_by_id(order_id)
+    if order is None:
+        abort(404)
+    return render_template("orders/detail.html", order=order, producer_view=True, admin_view=True,
+                           actions=order_service.allowed_actions(current_user, order),
+                           status_form=OrderStatusForm(), statuses=OrderStatus)
+
+
+# --- Hafta 6: Kategori yönetimi ------------------------------------------------
 
 @admin_bp.route("/kategoriler")
 @role_required(RoleName.ADMIN)

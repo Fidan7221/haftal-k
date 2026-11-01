@@ -33,6 +33,10 @@ PRODUCERS = [
 ]
 
 CUSTOMER = ("musteri@example.com", "Demo Müşteri")
+# Hafta 8: Vize demosunda yönetici panelini canlıda gösterebilmek için. Ücretsiz Render
+# planında terminal (shell) olmadığı için "flask create-admin" canlıda çalıştırılamıyor.
+# Parolası da DEMO_PASSWORD'dür (koda yazılmaz).
+ADMIN = ("yonetici@example.com", "Demo Yönetici")
 
 
 def _user(email, full_name, role_name, password):
@@ -71,7 +75,9 @@ def seed_demo():
         created += 1
 
     _, customer_new = _user(*CUSTOMER, RoleName.CUSTOMER, password)
+    _, admin_new = _user(*ADMIN, RoleName.ADMIN, password)
     db.session.commit()
-    if not created and not customer_new:
+    if not created and not customer_new and not admin_new:
         return "Demo verisi zaten var; değişiklik yapılmadı."
-    return f"Demo verisi eklendi: {created} üretici, {'1 müşteri' if customer_new else '0 müşteri'}."
+    return (f"Demo verisi eklendi: {created} üretici, {1 if customer_new else 0} müşteri, "
+            f"{1 if admin_new else 0} yönetici.")

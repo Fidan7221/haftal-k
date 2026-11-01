@@ -25,7 +25,7 @@ def dashboard():
     if current_user.is_producer:
         return redirect(url_for("producer.dashboard"))  # Hafta 6: producer_routes.py'ye taşındı
     if current_user.is_admin:
-        return redirect(url_for("main.admin_dashboard"))
+        return redirect(url_for("admin.dashboard"))
     return redirect(url_for("main.customer_dashboard"))
 
 
@@ -38,7 +38,4 @@ def customer_dashboard():
                            cart_count=cart_service.item_count(current_user))
 
 
-@main_bp.route("/yonetici/panel")
-@role_required(RoleName.ADMIN)
-def admin_dashboard():
-    return render_template("admin/dashboard.html")
+# Yönetici paneli (/yonetici/panel) Hafta 8'de admin_routes.py'ye taşındı (adres aynı kaldı).

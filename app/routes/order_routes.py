@@ -80,4 +80,5 @@ def change_status(order_id):
         return redirect(url_for("order.producer_detail", order_id=order.id))
     if current_user.is_customer:
         return redirect(url_for("order.customer_detail", order_id=order.id))
-    return redirect(url_for("main.dashboard"))
+    # Hafta 8: Yönetici önceden panele atılıyordu; artık işlem yaptığı siparişe döner
+    return redirect(url_for("admin.order_detail", order_id=order.id))
