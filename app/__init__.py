@@ -19,7 +19,7 @@ from app.extensions import csrf, db, login_manager, migrate
 # Hafta 8: Ara sürüm numarası (Semantic Versioning: MAJOR.MINOR.PATCH).
 # 0.x.y = henüz kararlı 1.0 değil; MINOR her yeni modülde, PATCH her hata düzeltmesinde artar.
 # Git etiketiyle (git tag v0.8.0) aynı tutulur; sayfanın alt bilgisinde görünür.
-__version__ = "0.8.0"
+__version__ = "0.8.1"
 
 
 @event.listens_for(Engine, "connect")

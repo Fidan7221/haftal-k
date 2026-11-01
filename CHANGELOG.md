@@ -7,6 +7,11 @@ Her sürüm bir Git etiketiyle (`git tag -a vX.Y.Z`) işaretlenir.
 ## [Yayımlanmadı]
 - Hafta 9: Hal fiyatı API entegrasyonu ve gerçek ödeme altyapısı (planlanan → `0.9.0`)
 
+## [0.8.1] - 2026-11-01
+### Eklendi
+- Demo ürünlerine örnek görseller (`app/static/img/demo/`, projede çizilmiş illüstrasyonlar). Canlıda görselsiz eklenmiş demo ürünlerine `flask seed-demo` görseli sonradan ekler.
+- Test: `test_demo_products_have_sample_images` (toplam 98 test)
+
 ## [0.8.0] - 2026-11-01 — Vize ara sürümü
 Kullanıcı + veri tabanı + çekirdek modüller (ürün, ilan, sepet, sipariş) uçtan uca çalışır.
 

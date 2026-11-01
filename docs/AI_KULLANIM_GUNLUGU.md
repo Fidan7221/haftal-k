@@ -14,7 +14,7 @@ Anlamadığım kodu projeye almadım; anlamadığım yeri yapay zekâya tekrar s
 | 5 | Kimlik doğrulama ve güvenlik | Kayıt/giriş, parola özeti (hash), rol dekoratörü, CSRF, hatalı giriş sınırı | Testleri çalıştırdım (55 test); 5 hatalı girişte hesabın kilitlendiğini elle denedim; `docs/GUVENLIK_NOTU.md` |
 | 6 | Üretici ve ürün modülü | Ürün CRUD, görsel yükleme doğrulaması, sahiplik kontrolü, hızlı stok formu | Başka üreticinin ürün numarasını adres çubuğuna yazıp 404 aldığımı gördüm; stok için CHECK kısıtını açıkladım |
 | 7 | İlan, sepet, sipariş + canlı yayın | Sipariş durum makinesi, checkout transaction'ı, koşullu UPDATE ile stok düşme, Render dosyası | Canlıya kendim çıkardım (`git push`, Render Blueprint). İlk kurulum bölge farkı yüzünden çöktü; hata mesajını okuyup düzeltmeyi uyguladım |
-| 8 | **Entegrasyon hatalarını ayıklama ve refaktör** | Modüller arası yolları deneyen testler yazdırdım; 4 hata buldu ve düzeltti; yönetici panelini tamamladı; sürüm numarası ve CHANGELOG | Her düzeltmeyi aşağıda açıkladım. Regresyon testlerinin eski kodda **başarısız**, yeni kodda **başarılı** olduğunu gördüm (97 test geçiyor) |
+| 8 | **Entegrasyon hatalarını ayıklama ve refaktör** | Modüller arası yolları deneyen testler yazdırdım; 4 hata buldu ve düzeltti; yönetici panelini tamamladı; sürüm numarası ve CHANGELOG | Her düzeltmeyi aşağıda açıkladım. Regresyon testlerinin eski kodda **başarısız**, yeni kodda **başarılı** olduğunu gördüm (98 test geçiyor) |
 
 ---
 

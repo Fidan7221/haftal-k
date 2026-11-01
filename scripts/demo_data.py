@@ -32,6 +32,18 @@ PRODUCERS = [
     ]),
 ]
 
+# Hafta 8: Demo ürünlerinin örnek görselleri (app/static/img/demo/). Görseller projede
+# çizilmiş sade illüstrasyonlardır (telif sorunu yok) ve git'e eklenir. Render'ın ücretsiz
+# planında yüklenen dosyalar her yeniden kurulumda silindiği için uploads/ klasörü kullanılmaz.
+DEMO_IMAGES = {
+    "Salkım Domates": "demo/domates.png",
+    "Kapya Biber": "demo/biber.png",
+    "Çiçek Balı": "demo/bal.png",
+    "Gün Kurusu Kayısı": "demo/kayisi.png",
+    "Köy Tereyağı": "demo/tereyagi.png",
+    "Kuru Fasulye": "demo/fasulye.png",
+}
+
 CUSTOMER = ("musteri@example.com", "Demo Müşteri")
 # Hafta 8: Vize demosunda yönetici panelini canlıda gösterebilmek için. Ücretsiz Render
 # planında terminal (shell) olmadığı için "flask create-admin" canlıda çalıştırılamıyor.
@@ -66,7 +78,7 @@ def seed_demo():
         for name, slug, unit, stock, price, listed, min_order, organic in products:
             product = Product(producer=profile, category=Category.query.filter_by(slug=slug).one(),
                               name=name, unit=unit, stock_quantity=Decimal(stock), is_organic=organic,
-                              description="Demo ürün (sentetik veri).")
+                              description="Demo ürün (sentetik veri).", image_path=DEMO_IMAGES.get(name))
             db.session.add(product)
             db.session.add(Listing(product=product, title=name, price=Decimal(price),
                                    stock_quantity=Decimal(listed), min_order_quantity=Decimal(min_order),
@@ -76,8 +88,23 @@ def seed_demo():
 
     _, customer_new = _user(*CUSTOMER, RoleName.CUSTOMER, password)
     _, admin_new = _user(*ADMIN, RoleName.ADMIN, password)
+    images_added = _add_missing_demo_images()
     db.session.commit()
-    if not created and not customer_new and not admin_new:
+    if not created and not customer_new and not admin_new and not images_added:
         return "Demo verisi zaten var; değişiklik yapılmadı."
     return (f"Demo verisi eklendi: {created} üretici, {1 if customer_new else 0} müşteri, "
-            f"{1 if admin_new else 0} yönetici.")
+            f"{1 if admin_new else 0} yönetici, {images_added} görsel.")
+
+
+def _add_missing_demo_images():
+    """Daha önce görselsiz eklenmiş demo ürünlerine görsel ekler (canlı sitede zaten var olanlar).
+    Yalnızca demo üreticilerin ürünlerine ve görseli BOŞ olanlara dokunur."""
+    demo_emails = [email for email, *_ in PRODUCERS]
+    products = (Product.query.join(ProducerProfile).join(User)
+                .filter(User.email.in_(demo_emails), Product.image_path.is_(None)).all())
+    count = 0
+    for product in products:
+        if product.name in DEMO_IMAGES:
+            product.image_path = DEMO_IMAGES[product.name]
+            count += 1
+    return count

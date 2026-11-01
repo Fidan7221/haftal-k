@@ -319,3 +319,28 @@ def test_demo_data_is_synthetic_idempotent_and_usable(app, client, monkeypatch):
 
     login(client, "yonetici@example.com", "DemoParola123")
     assert 'data-test="order-total">1<' in client.get("/yonetici/panel").get_data(as_text=True)
+
+
+def test_demo_products_have_sample_images(app, client, monkeypatch):
+    """Demo ürünlerinin örnek görselleri var, dosyalar projede duruyor ve vitrinde görünüyor.
+    Görselsiz eklenmiş eski demo ürünlerine (canlı site) sonraki çalıştırmada görsel eklenir."""
+    import os
+
+    from scripts.demo_data import seed_demo
+
+    monkeypatch.setenv("DEMO_PASSWORD", "DemoParola123")
+    seed_demo()
+    products = Product.query.all()
+    assert products and all(p.image_path and p.image_path.startswith("demo/") for p in products)
+    for product in products:
+        assert os.path.isfile(os.path.join(app.static_folder, "img", product.image_path))
+
+    html = client.get("/ilanlar").get_data(as_text=True)
+    assert "/static/img/demo/domates.png" in html
+
+    # Canlıdaki gibi: ürünler önceden görselsiz eklenmiş olsun
+    for product in products:
+        product.image_path = None
+    db.session.commit()
+    assert "6 görsel" in seed_demo()
+    assert all(p.image_path for p in Product.query.all())

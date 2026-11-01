@@ -19,7 +19,7 @@ Kullanıcı + veri tabanı + çekirdek modüller uçtan uca çalışıyor: Üret
 ## 3. Sayılarla
 - **14 tablo** (11 tanesi şu an kullanılıyor; hal fiyatı, tahmin ve yorum tabloları sonraki haftalar için hazır), 1 Flask migration (`migrations_flask/`)
 - **7 modül** (blueprint): main, auth, producer, admin, listing, cart, order
-- **97 otomatik test**, hepsi geçiyor (Hafta 7 sonunda 87)
+- **98 otomatik test**, hepsi geçiyor (Hafta 7 sonunda 87)
 - **4 entegrasyon hatası** bulundu ve düzeltildi (`docs/HAFTA8_ARA_SURUM.md` bölüm 3)
 
 ## 4. Bu hafta yapılanlar

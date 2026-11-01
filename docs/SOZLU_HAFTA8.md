@@ -109,7 +109,7 @@ Sonra Hafta 10-11'de fiyat geçmişi grafiği ve yapay zekâ ile fiyat tahmini (
 ## Ek sorular (gelebilir)
 
 **S: Neden 0.8.0? Neden 1.0.0 değil?**
-"Semantic Versioning: MAJOR.MINOR.PATCH. MAJOR 0 'henüz kararlı değil, geliştiriliyor' demek. Her haftalık modül yeni özellik, yani MINOR artar: Hafta 8 → 0.8.0. Vizeden sonra yalnızca hata düzeltirsem PATCH artar: 0.8.1."
+"Semantic Versioning: MAJOR.MINOR.PATCH. MAJOR 0 'henüz kararlı değil, geliştiriliyor' demek. Her haftalık modül yeni özellik, yani MINOR artar: Hafta 8 → 0.8.0. Nitekim v0.8.0'dan sonra demo ürünlerine örnek görsel ekledim; yeni modül olmadığı için yalnızca PATCH arttı: 0.8.1."
 
 **S: Git etiketi ne işe yarar?**
 "Belirli bir commit'e kalıcı isim verir. Hoca 'vizede gösterdiğin kod' dediğinde `git checkout v0.8.0` ile tam o hâline dönebilirim. `-a` ile açıklamalı etiket attım; kimin, ne zaman attığını saklar. `git push` etiketleri göndermez, `git push origin v0.8.0` ayrıca gerekir."
@@ -124,7 +124,7 @@ Sonra Hafta 10-11'de fiyat geçmişi grafiği ve yapay zekâ ile fiyat tahmini (
 "Derine inmeden 'her sayfa açılıyor mu?' diye bakan hızlı test. Benim testim her rol için tüm sayfaları açıp 500 hatası olmadığını kontrol ediyor. Yönetici panelini taşırken oluşan sonsuz yönlendirmeyi bu test yakaladı."
 
 **S: Entegrasyonu neden son ana bırakmadın?**
-"Her hafta yeni modülü eklerken eski testleri de çalıştırdım: Hafta 6'da 50, Hafta 7'de 87, şimdi 97 test. Yani **artımlı entegrasyon** yaptım. Hepsini sonda birleştirseydim (büyük patlama / big bang) hatanın hangi modülden geldiğini bulmak çok zor olurdu."
+"Her hafta yeni modülü eklerken eski testleri de çalıştırdım: Hafta 6'da 50, Hafta 7'de 87, şimdi 98 test. Yani **artımlı entegrasyon** yaptım. Hepsini sonda birleştirseydim (büyük patlama / big bang) hatanın hangi modülden geldiğini bulmak çok zor olurdu."
 
 **S: Yapay zekâyı nasıl kullandın?**
 "Hata ayıklama ve refaktör için kullandım, `docs/AI_KULLANIM_GUNLUGU.md` dosyasına haftalık yazdım. Her değişikliği testle doğruladım. Yapay zekânın kendi hatası da oldu: yönetici paneli rotasını iki yerde bıraktı, sonsuz yönlendirme oluştu. Testim yakaladı. Anlamadığım kodu projeye almadım."

@@ -16,7 +16,7 @@
 | Ara sürüm etiketleme | Sürüm numarası `0.8.0`, sayfanın alt bilgisinde görünür; `CHANGELOG.md`; Git etiketi komutları | `app/__init__.py`, `CHANGELOG.md`, bölüm 6 |
 | Kısa demo senaryosu | 7-8 dakikalık adım adım senaryo | `docs/DEMO_SENARYOSU.md` |
 
-Testler: **87 → 97 test**, hepsi geçiyor (`python -m pytest`).
+Testler: **87 → 98 test**, hepsi geçiyor (`python -m pytest`).
 
 ---
 
@@ -102,14 +102,14 @@ Her hata için önce onu yakalayan bir **regresyon testi** yazıldı, test eski 
 | **Duman (smoke) testi** | Her sayfa açılıyor mu? (derin kontrol yok, hızlı) | `test_smoke_every_page_opens_for_every_role` |
 | **Regresyon testi** | Düzeltilen hata geri geldi mi? | `test_regression_*` |
 
-Yaklaşımım (**büyük patlama değil, artımlı entegrasyon**): Her hafta yeni modül eklendiğinde eski testler de çalıştırıldı (Hafta 6'da 50, Hafta 7'de 87, Hafta 8'de 97 test). Bu hafta modüllerin **arasındaki** yolları deneyen testler eklendi.
+Yaklaşımım (**büyük patlama değil, artımlı entegrasyon**): Her hafta yeni modül eklendiğinde eski testler de çalıştırıldı (Hafta 6'da 50, Hafta 7'de 87, Hafta 8'de 98 test). Bu hafta modüllerin **arasındaki** yolları deneyen testler eklendi.
 
 `tests/test_integration.py` içindeki testler veri tabanına doğrudan kayıt eklemez; her şeyi **formlarla** yapar (kayıt formu, ürün formu, ilan formu, sepet, ödeme). Böylece form → rota → servis → repository → veri tabanı zincirinin tamamı denenir.
 
 Çalıştırma:
 ```
-python -m pytest                              # tüm testler (97)
-python -m pytest -v tests/test_integration.py # yalnızca entegrasyon testleri (10)
+python -m pytest                              # tüm testler (98)
+python -m pytest -v tests/test_integration.py # yalnızca entegrasyon testleri (11)
 ```
 
 ---
@@ -122,13 +122,23 @@ Biçim: **`MAJOR.MINOR.PATCH`** → örnek `0.8.0`
 |---|---|---|
 | MAJOR | Geriye uyumsuz büyük değişiklik | `0` = henüz kararlı değil (geliştirme sürümü). Final teslimde `1.0.0` |
 | MINOR | Geriye uyumlu yeni özellik/modül | Haftalık modüller: Hafta 8 → `0.8.0`, Hafta 9 (hal fiyatı API) → `0.9.0` |
-| PATCH | Yalnızca hata düzeltmesi | Vizeden sonra küçük düzeltme gerekirse `0.8.1` |
+| PATCH | Yalnızca hata düzeltmesi | `0.8.1`: demo ürünlerine örnek görseller (yeni modül değil, küçük düzeltme) |
 
 - Sürüm numarası tek yerde tutulur: `app/__init__.py` → `__version__ = "0.8.0"`. Her sayfanın alt bilgisinde `v0.8.0` görünür; hoca canlı sitede hangi sürümü gördüğünü anlar.
 - Git etiketi (`v0.8.0`) ile kodu aynı sürüm numarası taşır. Değişiklikler `CHANGELOG.md` dosyasında yazılıdır.
 - `v` öneki Git etiketlerinde yaygın bir alışkanlıktır (`v0.8.0`); sürüm numarasının kendisi `0.8.0`'dır.
 
 ---
+
+### 0.8.1 nasıl etiketlenir? (v0.8.0 zaten GitHub'da)
+```
+git add .
+git commit -m "Demo ürünlerine örnek görseller (v0.8.1)"
+git tag -a v0.8.1 -m "Demo ürün görselleri"
+git push
+git push origin v0.8.1
+```
+**Neden v0.8.0'ı silip yeniden atmadık?** GitHub'a gönderilmiş etiket değiştirilmez; başkası (veya hoca) o sürümü indirmiş olabilir. Yeni değişiklik = yeni sürüm numarası.
 
 ## 6. Git etiketi (tag) nasıl atılır? — VS Code terminalinde
 
@@ -137,7 +147,7 @@ Biçim: **`MAJOR.MINOR.PATCH`** → örnek `0.8.0`
 
 ```
 git status                         # değişiklikleri gör
-python -m pytest                   # ÖNCE testler geçmeli (97 passed)
+python -m pytest                   # ÖNCE testler geçmeli (98 passed)
 git add .
 git commit -m "Hafta 8: Entegrasyon, 4 hata düzeltmesi, entegrasyon testleri, v0.8.0"
 git tag -a v0.8.0 -m "Vize ara sürümü: kullanıcı + ürün + ilan + sepet + sipariş uçtan uca"
