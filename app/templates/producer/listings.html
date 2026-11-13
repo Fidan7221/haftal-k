@@ -6,7 +6,11 @@
 <div class="container py-4">
   <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
     <h1 class="h3 fw-bold mb-0"><i class="bi bi-megaphone text-farm"></i> İlanlarım</h1>
-    <a href="{{ url_for('listing.new_listing') }}" class="btn btn-farm"><i class="bi bi-plus-lg"></i> Yeni ilan</a>
+    {% if can_list %}
+      <a href="{{ url_for('listing.new_listing') }}" class="btn btn-farm"><i class="bi bi-plus-lg"></i> Yeni ilan</a>
+    {% else %}
+      <a href="{{ url_for('producer.new_product') }}" class="btn btn-farm"><i class="bi bi-plus-lg"></i> Önce ürün ekle</a>
+    {% endif %}
   </div>
 
   {% if listings %}
@@ -56,7 +60,12 @@
   {% else %}
     <div class="text-center text-muted py-5">
       <i class="bi bi-megaphone display-5 d-block mb-2"></i>
-      Henüz ilanınız yok. <a href="{{ url_for('listing.new_listing') }}" class="link-farm">İlk ilanınızı açın</a>.
+      Henüz ilanınız yok.
+      {% if can_list %}
+        <a href="{{ url_for('listing.new_listing') }}" class="link-farm">İlk ilanınızı açın</a>.
+      {% else %}
+        İlan açmak için önce <a href="{{ url_for('producer.new_product') }}" class="link-farm">bir ürün ekleyin</a>.
+      {% endif %}
     </div>
   {% endif %}
 </div>

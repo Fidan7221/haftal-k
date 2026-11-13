@@ -22,9 +22,18 @@
       <a href="{{ url_for('producer.new_product') }}" class="btn btn-farm">
         <i class="bi bi-plus-lg"></i> Ürün ekle
       </a>
-      <a href="{{ url_for('listing.new_listing') }}" class="btn btn-farm">
-        <i class="bi bi-megaphone"></i> İlan aç
-      </a>
+      {# İlan bir ürüne bağlıdır: satışa açık ürün yoksa düğme pasif görünür #}
+      {% if stats.active %}
+        <a href="{{ url_for('listing.new_listing') }}" class="btn btn-farm">
+          <i class="bi bi-megaphone"></i> İlan aç
+        </a>
+      {% else %}
+        <span class="d-inline-block" tabindex="0" title="İlan açmak için önce ürün ekleyin">
+          <button type="button" class="btn btn-farm" disabled>
+            <i class="bi bi-megaphone"></i> İlan aç
+          </button>
+        </span>
+      {% endif %}
     </div>
   </div>
 

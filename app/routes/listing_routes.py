@@ -62,8 +62,10 @@ def _owned_listing_or_404(listing_id):
 @listing_bp.route("/uretici/ilanlar")
 @role_required(RoleName.PRODUCER)
 def my_listings():
+    profile = _profile()
     return render_template("producer/listings.html",
-                           listings=listing_service.producer_listings(_profile()),
+                           listings=listing_service.producer_listings(profile),
+                           can_list=bool(listing_service.listable_products(profile)),  # ürün yoksa ilan açılamaz
                            action_form=ActionForm())
 
 

@@ -22,21 +22,19 @@ from app.extensions import csrf, db, login_manager, migrate
 __version__ = "0.8.3"
 
 
-@event.listens_for(Engine, "connect")
-def _sqlite_foreign_keys_on(dbapi_connection, connection_record):
-    """Hafta 8 düzeltmesi: SQLite yabancı anahtar (FOREIGN KEY) kısıtlarını VARSAYILAN OLARAK
-    DENETLEMEZ; her bağlantıda "PRAGMA foreign_keys = ON" demek gerekir (Hafta 4'te Node.js
-    tarafında db.js bunu yapıyordu, Flask tarafında unutulmuştu).
+@event.listens_for(Engine, "connect")  # her bağlantıda çalış
+def _sqlite_foreign_keys_on(dbapi_connection, connection_record):  # bağlantı gelir
+    """SQLite yabancı anahtarları kontrol etmez; bu fonksiyon kontrolü açar.
 
-    Sonuç: yerelde (SQLite) hatalı silme sessizce geçiyor, canlıda (PostgreSQL) patlıyordu.
-    Bu ayarla iki ortam aynı davranır. PostgreSQL bağlantısında hiçbir şey yapılmaz.
+    Neden zorlandım: Sepetteki ürünü silince canlıda 500 hatası çıkıyordu,
+    bilgisayarımda çıkmıyordu. Sebep: PostgreSQL kontrol ediyor, SQLite etmiyor.
     """
-    import sqlite3
+    import sqlite3  # SQLite modülü
 
-    if isinstance(dbapi_connection, sqlite3.Connection):
-        cursor = dbapi_connection.cursor()
-        cursor.execute("PRAGMA foreign_keys = ON")
-        cursor.close()
+    if isinstance(dbapi_connection, sqlite3.Connection):  # SQLite mi?
+        cursor = dbapi_connection.cursor()  # imleç aç
+        cursor.execute("PRAGMA foreign_keys = ON")  # kontrolü aç
+        cursor.close()  # imleci kapat
 
 
 def create_app(config_name=None):

@@ -30,3 +30,9 @@ app/static/uploads/
 .idea/
 .DS_Store
 Thumbs.db
+
+# .exe derleme çıktıları (masaüstü uygulaması)
+build/
+dist/
+*.spec
+exe_dosyalari.zip
