@@ -25,7 +25,7 @@
       <div class="collapse navbar-collapse" id="mainNav">
         <ul class="navbar-nav me-auto">
           <li class="nav-item"><a class="nav-link" href="{{ url_for('main.index') }}">Ana Sayfa</a></li>
-          <li class="nav-item"><a class="nav-link" href="{{ url_for('listing.index') }}">İlanlar</a></li>
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('listing.index') }}">Pazar</a></li>
           {% if current_user.is_authenticated and current_user.is_producer %}
             <li class="nav-item"><a class="nav-link" href="{{ url_for('producer.products') }}">Ürünlerim</a></li>
             <li class="nav-item"><a class="nav-link" href="{{ url_for('listing.my_listings') }}">İlanlarım</a></li>
