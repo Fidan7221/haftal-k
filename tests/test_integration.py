@@ -22,7 +22,6 @@ from app.extensions import db
 from app.models import (
     CartItem, Category, Listing, ListingStatus, Order, OrderStatus, PaymentStatus, Product,
 )
-from app.repositories.user_repository import UserRepository
 from app.services.auth_service import create_admin_user
 
 PASSWORD = "Parola123"
@@ -359,34 +358,33 @@ def test_demo_products_have_sample_images(app, client, monkeypatch):
 
 
 
-def test_transfer_demo_products(app, client, monkeypatch):
-    """flask transfer-demo-products: demo ürünleri ilan ve görselleriyle gerçek üreticiye geçer;
-    eski sipariş demo üreticide kalır; tekrar çalışınca ve seed-demo tekrar çalışınca bir şey değişmez."""
-    from scripts.demo_data import seed_demo, transfer_demo_products
+
+def test_remove_demo_listings(app, client, monkeypatch):
+    """flask remove-demo-listings: demo ilanları Pazar'dan kalkar; siparişi olan kapatılır,
+    olmayan silinir; gerçek üreticinin ilanına dokunulmaz; tekrar çalışınca bir şey yapmaz;
+    seed-demo tekrar çalışsa da ilanlar geri gelmez."""
+    from scripts.demo_data import remove_demo_listings, seed_demo
 
     monkeypatch.setenv("DEMO_PASSWORD", "DemoParola123")
     seed_demo()
-    register(client, "Fidan@Test.com", "producer", farm_name="Fidan Çiftliği")
+    register(client, "fidan@test.com", "producer", farm_name="Fidan Çiftliği")
+    login(client, "fidan@test.com")
+    open_listing_via_form(client, add_product_via_form(client, name="Fidan Domates"))
+    logout(client)
     fasulye = Listing.query.filter_by(title="Kuru Fasulye").one()
-    demo_profile = fasulye.producer
     login(client, "musteri@example.com", "DemoParola123")
     client.post(f"/sepet/ekle/{fasulye.id}", data={"quantity": "3"})
     client.post("/sepet/odeme", data={"shipping_address": ADDRESS, "note": ""})
     logout(client)
 
-    assert "tanımlı değil" in transfer_demo_products("")
-    assert "üretici hesabına ait değil" in transfer_demo_products("musteri@example.com")
-    assert "6 demo ürünü (6 ilanıyla)" in transfer_demo_products("fidan@test.com")  # büyük/küçük harf fark etmez
-
-    fidan = UserRepository.get_by_email("fidan@test.com").producer_profile
-    assert Product.query.filter_by(producer=fidan).count() == 6
-    assert all(p.image_path.startswith("demo/") for p in fidan.products)  # görseller korundu
-    assert fasulye.producer == fidan and fasulye.status == ListingStatus.ACTIVE
-    assert Order.query.one().producer == demo_profile                       # eski sipariş geçmişi aynı
-
-    assert "Taşınacak demo ürünü yok" in transfer_demo_products("fidan@test.com")
+    assert "5 silindi, 1 kapatıldı" in remove_demo_listings()
+    assert fasulye.status == ListingStatus.CLOSED and Order.query.count() == 1  # sipariş geçmişi duruyor
+    active = Listing.query.filter_by(status=ListingStatus.ACTIVE).all()
+    assert [l.product.name for l in active] == ["Fidan Domates"]
+    assert Product.query.count() == 7                                           # ürünler duruyor
+    assert "yok" in remove_demo_listings()
     seed_demo()
-    assert Product.query.filter_by(producer=fidan).count() == Product.query.count() == 6  # geri gelmedi
+    assert Listing.query.filter_by(status=ListingStatus.ACTIVE).count() == 1    # geri gelmedi
 
     html = client.get("/ilanlar").get_data(as_text=True)
-    assert "Fidan Çiftliği" in html and "Yeşil Vadi" not in html
+    assert "Fidan Çiftliği" in html and "Yeşil Vadi" not in html and "Dağ Eteği" not in html

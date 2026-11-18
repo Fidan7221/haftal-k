@@ -115,36 +115,27 @@ def _add_missing_demo_images():
 
 
 
-def transfer_demo_products(email):
-    """Demo üreticilerin (uretici1/2@example.com) ürünlerini, ilanları ve görselleriyle birlikte
-    gerçek bir üreticinin hesabına taşır.
 
-    Çalıştırma: flask transfer-demo-products   (alıcı e-posta: DEMO_OWNER_EMAIL ortam değişkeni)
-    Render'da açılış komutunda çalışır; ürün kalmayınca bir şey yapmaz. seed_demo ürünü yalnızca
-    demo üretici İLK KEZ oluşturulurken eklediği için taşınan ürünler geri gelmez.
+def remove_demo_listings():
+    """Demo üreticilerin (uretici1/2@example.com) ilanlarını Pazar'dan kaldırır.
 
-    İlanın üreticisi ürünün sahibinden gelir (Listing.producer -> product.producer); bu yüzden
-    ürünü taşımak ilanları da taşır. Eski SİPARİŞLER taşınmaz: sipariş kalemi o anki üreticiyi
-    (order_items.producer_id) saklar, geçmiş değişmez. Demo hesaplar boş olarak kalır.
+    Çalıştırma: flask remove-demo-listings  (Render'da açılış komutunda; her seferinde güvenli)
+    seed_demo ilanı yalnızca üretici İLK KEZ oluşturulurken eklediği için silinen ilan geri gelmez.
+    Sitenin kendi kuralı kullanılır: siparişi olan ilan silinmez, KAPATILIR (sipariş geçmişi bozulmasın);
+    siparişi olmayan ilan sepetlerden de çıkarılıp silinir. Kapalı ilanlar Pazar'da görünmez.
+    Demo hesaplar ve ürünler durur.
     """
-    email = (email or "").strip().lower()
-    if not email:
-        return "DEMO_OWNER_EMAIL tanımlı değil; demo ürünleri taşınmadı."
-    owner = User.query.filter(db.func.lower(User.email) == email).first()
-    if owner is None or owner.producer_profile is None:
-        return "DEMO_OWNER_EMAIL bir üretici hesabına ait değil; demo ürünleri taşınmadı."
-    if email in [e for e, *_ in PRODUCERS]:
-        return "DEMO_OWNER_EMAIL bir demo hesabı olamaz."
+    from app.services.listing_service import delete_listing
 
-    demo_emails = [e for e, *_ in PRODUCERS]
-    products = (Product.query.join(ProducerProfile).join(User)
-                .filter(User.email.in_(demo_emails)).all())
-    if not products:
-        return "Taşınacak demo ürünü yok."
-    listings = 0
-    for product in products:
-        product.producer = owner.producer_profile
-        product.description = None if product.description == "Demo ürün (sentetik veri)." else product.description
-        listings += len(product.listings)
-    db.session.commit()
-    return f"{len(products)} demo ürünü ({listings} ilanıyla) üretici hesabına taşındı."
+    demo_emails = [email for email, *_ in PRODUCERS]
+    listings = (Listing.query.join(Product).join(ProducerProfile).join(User)
+                .filter(User.email.in_(demo_emails), Listing.status != ListingStatus.CLOSED).all())
+    if not listings:
+        return "Kaldırılacak demo ilanı yok."
+    deleted = closed = 0
+    for listing in listings:
+        if delete_listing(listing) == "deleted":
+            deleted += 1
+        else:
+            closed += 1
+    return f"Demo ilanları kaldırıldı: {deleted} silindi, {closed} kapatıldı (siparişi olduğu için)."

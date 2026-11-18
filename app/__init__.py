@@ -145,12 +145,12 @@ def register_cli_commands(app):
 
         print(run())
 
-    @app.cli.command("transfer-demo-products")
-    def transfer_demo_products():
-        """Demo ürün ve ilanlarını DEMO_OWNER_EMAIL üreticisinin hesabına taşır."""
-        from scripts.demo_data import transfer_demo_products as run
+    @app.cli.command("remove-demo-listings")
+    def remove_demo_listings():
+        """Demo üreticilerin ilanlarını Pazar'dan kaldırır (hesaplar ve ürünler kalır)."""
+        from scripts.demo_data import remove_demo_listings as run
 
-        print(run(os.environ.get("DEMO_OWNER_EMAIL", "")))
+        print(run())
 
     @app.cli.command("fetch-prices")
     @click.option("--days", default=30, show_default=True, help="Kaç günlük fiyat çekilsin")
