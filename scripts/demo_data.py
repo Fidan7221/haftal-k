@@ -112,3 +112,39 @@ def _add_missing_demo_images():
             product.image_path = DEMO_IMAGES[product.name]
             count += 1
     return count
+
+
+
+def transfer_demo_products(email):
+    """Demo üreticilerin (uretici1/2@example.com) ürünlerini, ilanları ve görselleriyle birlikte
+    gerçek bir üreticinin hesabına taşır.
+
+    Çalıştırma: flask transfer-demo-products   (alıcı e-posta: DEMO_OWNER_EMAIL ortam değişkeni)
+    Render'da açılış komutunda çalışır; ürün kalmayınca bir şey yapmaz. seed_demo ürünü yalnızca
+    demo üretici İLK KEZ oluşturulurken eklediği için taşınan ürünler geri gelmez.
+
+    İlanın üreticisi ürünün sahibinden gelir (Listing.producer -> product.producer); bu yüzden
+    ürünü taşımak ilanları da taşır. Eski SİPARİŞLER taşınmaz: sipariş kalemi o anki üreticiyi
+    (order_items.producer_id) saklar, geçmiş değişmez. Demo hesaplar boş olarak kalır.
+    """
+    email = (email or "").strip().lower()
+    if not email:
+        return "DEMO_OWNER_EMAIL tanımlı değil; demo ürünleri taşınmadı."
+    owner = User.query.filter(db.func.lower(User.email) == email).first()
+    if owner is None or owner.producer_profile is None:
+        return "DEMO_OWNER_EMAIL bir üretici hesabına ait değil; demo ürünleri taşınmadı."
+    if email in [e for e, *_ in PRODUCERS]:
+        return "DEMO_OWNER_EMAIL bir demo hesabı olamaz."
+
+    demo_emails = [e for e, *_ in PRODUCERS]
+    products = (Product.query.join(ProducerProfile).join(User)
+                .filter(User.email.in_(demo_emails)).all())
+    if not products:
+        return "Taşınacak demo ürünü yok."
+    listings = 0
+    for product in products:
+        product.producer = owner.producer_profile
+        product.description = None if product.description == "Demo ürün (sentetik veri)." else product.description
+        listings += len(product.listings)
+    db.session.commit()
+    return f"{len(products)} demo ürünü ({listings} ilanıyla) üretici hesabına taşındı."

@@ -17,9 +17,9 @@ services:
     # Farklı bölgedeyse iç adres (dpg-...) çözülemez: "failed to resolve host" hatası.
     buildCommand: pip install -r requirements.txt
     # Her açılışta: 1) tabloları migration ile güncelle  2) roller/kategoriler
-    #               3) demo verisi (yalnızca ilk sefer)    4) hal fiyatları (eksik günler, Hafta 9)
-    #               5) web sunucusunu başlat
-    startCommand: flask db upgrade && flask seed-db && flask seed-demo && flask fetch-prices --days 60 && gunicorn run:app --bind 0.0.0.0:$PORT
+    #               3) demo verisi (yalnızca ilk sefer)    4) demo ürünlerini DEMO_OWNER_EMAIL hesabına taşı
+    #               5) hal fiyatları (eksik günler, Hafta 9) 6) web sunucusunu başlat
+    startCommand: flask db upgrade && flask seed-db && flask seed-demo && flask transfer-demo-products && flask fetch-prices --days 60 && gunicorn run:app --bind 0.0.0.0:$PORT
     healthCheckPath: /
     envVars:
       - key: PYTHON_VERSION
@@ -41,3 +41,5 @@ services:
         value: "1"             # gerçek fiyat/ödeme API'si bağlanınca "0" yapılır
       - key: ANTHROPIC_API_KEY
         sync: false            # Yapay zekâ anahtarı: Render kurulumda SORAR, koda yazılmaz (boş bırakılabilir)
+      - key: DEMO_OWNER_EMAIL
+        sync: false            # Demo ürünlerinin taşınacağı üreticinin e-postası (panelde girilir, koda yazılmaz)

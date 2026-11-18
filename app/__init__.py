@@ -145,6 +145,13 @@ def register_cli_commands(app):
 
         print(run())
 
+    @app.cli.command("transfer-demo-products")
+    def transfer_demo_products():
+        """Demo ürün ve ilanlarını DEMO_OWNER_EMAIL üreticisinin hesabına taşır."""
+        from scripts.demo_data import transfer_demo_products as run
+
+        print(run(os.environ.get("DEMO_OWNER_EMAIL", "")))
+
     @app.cli.command("fetch-prices")
     @click.option("--days", default=30, show_default=True, help="Kaç günlük fiyat çekilsin")
     @click.option("--force", is_flag=True, help="Veri tabanında olan günleri de yeniden çek")

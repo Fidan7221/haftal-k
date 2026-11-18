@@ -22,6 +22,7 @@ from app.extensions import db
 from app.models import (
     CartItem, Category, Listing, ListingStatus, Order, OrderStatus, PaymentStatus, Product,
 )
+from app.repositories.user_repository import UserRepository
 from app.services.auth_service import create_admin_user
 
 PASSWORD = "Parola123"
@@ -355,3 +356,37 @@ def test_demo_products_have_sample_images(app, client, monkeypatch):
     db.session.refresh(products[1])
     assert products[1].image_path == "products/uretici-yukledi.jpg"
     assert all(p.image_path.endswith(".jpg") for p in Product.query.all())
+
+
+
+def test_transfer_demo_products(app, client, monkeypatch):
+    """flask transfer-demo-products: demo ürünleri ilan ve görselleriyle gerçek üreticiye geçer;
+    eski sipariş demo üreticide kalır; tekrar çalışınca ve seed-demo tekrar çalışınca bir şey değişmez."""
+    from scripts.demo_data import seed_demo, transfer_demo_products
+
+    monkeypatch.setenv("DEMO_PASSWORD", "DemoParola123")
+    seed_demo()
+    register(client, "Fidan@Test.com", "producer", farm_name="Fidan Çiftliği")
+    fasulye = Listing.query.filter_by(title="Kuru Fasulye").one()
+    demo_profile = fasulye.producer
+    login(client, "musteri@example.com", "DemoParola123")
+    client.post(f"/sepet/ekle/{fasulye.id}", data={"quantity": "3"})
+    client.post("/sepet/odeme", data={"shipping_address": ADDRESS, "note": ""})
+    logout(client)
+
+    assert "tanımlı değil" in transfer_demo_products("")
+    assert "üretici hesabına ait değil" in transfer_demo_products("musteri@example.com")
+    assert "6 demo ürünü (6 ilanıyla)" in transfer_demo_products("fidan@test.com")  # büyük/küçük harf fark etmez
+
+    fidan = UserRepository.get_by_email("fidan@test.com").producer_profile
+    assert Product.query.filter_by(producer=fidan).count() == 6
+    assert all(p.image_path.startswith("demo/") for p in fidan.products)  # görseller korundu
+    assert fasulye.producer == fidan and fasulye.status == ListingStatus.ACTIVE
+    assert Order.query.one().producer == demo_profile                       # eski sipariş geçmişi aynı
+
+    assert "Taşınacak demo ürünü yok" in transfer_demo_products("fidan@test.com")
+    seed_demo()
+    assert Product.query.filter_by(producer=fidan).count() == Product.query.count() == 6  # geri gelmedi
+
+    html = client.get("/ilanlar").get_data(as_text=True)
+    assert "Fidan Çiftliği" in html and "Yeşil Vadi" not in html
