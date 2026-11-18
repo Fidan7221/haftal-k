@@ -4,7 +4,7 @@
 dersinin haftalık projesi. Kod, yorumlar, belgeler ve kullanıcı arayüzü **Türkçe**; yeni kod da
 Türkçe yorumlu ve öğrencinin sözlü sınavda anlatabileceği sadelikte olmalı.
 
-- Sürüm: `0.10.0` (`app/__init__.py` → `__version__`; CHANGELOG ile aynı tutulur)
+- Sürüm: `0.10.1` (`app/__init__.py` → `__version__`; CHANGELOG ile aynı tutulur)
 - Teknoloji: Python 3 + Flask, SQLAlchemy, SQLite (yerel) / PostgreSQL (Render), Bootstrap 5, pytest
 - Haftalık ders planı README'deki "Haftalara göre durum" tablosunda. Sıradaki: **Hafta 11 — Değerlendirme ve İtibar Modülü**
 
@@ -12,9 +12,10 @@ Türkçe yorumlu ve öğrencinin sözlü sınavda anlatabileceği sadelikte olma
 
 ```
 python run.py                     # http://127.0.0.1:5000
-python -m pytest                  # 181 test, ~3 dk
+python -m pytest                  # 182 test, ~3 dk
 flask db upgrade                  # migration'lar migrations_flask/ içinde (migrations/ Hafta 4 Node.js'e ait)
 flask seed-db / seed-demo / create-admin
+flask remove-demo-listings        # demo ilanlarını Pazar'dan kaldırır (Render açılışında çalışır)
 flask fetch-prices --days 60      # hal fiyatları (varsayılan sahte servis, internet gerekmez)
 python build_exe.py               # masaüstü .exe (masaustu.py)
 ```
@@ -79,7 +80,10 @@ python build_exe.py               # masaüstü .exe (masaustu.py)
 - Claude API'ye **gerçek bir istek hiç atılmadı** (anahtar yok, para harcanmasın diye); yalnızca sahte istemciyle test edildi.
 - Masaüstü .exe paketine `anthropic` eklenmedi; orada yapay zekâ kapalı, kural tabanlı çalışır.
   `masaustu.py` AI günlüğünü veri klasörüne yazar ve açılışta 60 günlük örnek fiyat yükler.
-- `docs/AI_KULLANIM_GUNLUGU.md` Hafta 9-10 satırlarındaki "Benim katkım" sütunu öğrenci tarafından
-  doldurulacak — öğrenci adına doğrulama iddiası **uydurulmamalı**.
-- Hafta 9-10 değişiklikleri commit edilmedi; commit ve `git tag` öğrencinin işi.
+- `docs/AI_KULLANIM_GUNLUGU.md` "Benim katkım" sütununa yalnızca öğrencinin GERÇEKTEN yaptığı işler yazılır;
+  öğrenci adına doğrulama iddiası **uydurulmamalı**.
+- Canlıda demo ilanları kaldırıldı (`flask remove-demo-listings`); Pazar'daki ilanlar öğrencinin (fidan) kendi ilanları.
+- Gerçek hal fiyatı kaynağı yok: İBB'nin servisi (halfiyatlaripublicdata.ibb.gov.tr) yanıt vermiyor/belgesiz;
+  fiyatlar sahte serviste (araştırma: `docs/HAFTA9_API_ENTEGRASYONU.md`).
+- Git akışı: değişiklikler `main`'e push edilince Render canlıyı yeniden kurar; etiketler açıklamalı (`git tag -a`).
 - Şema değişikliği yapılmadı (mevcut `payments`, `market_prices`, `price_predictions` tabloları kullanıldı); migration gerekmedi.

@@ -7,6 +7,13 @@ Her sürüm bir Git etiketiyle (`git tag -a vX.Y.Z`) işaretlenir.
 ## [Yayımlanmadı]
 - Hafta 11: Değerlendirme ve itibar modülü (planlanan → `0.11.0`)
 
+## [0.10.1] - 2026-11-18
+### Eklendi
+- `flask remove-demo-listings`: demo üreticilerin ilanlarını Pazar'dan kaldırır (siparişi olan kapatılır);
+  Render açılış komutunda çalışır. Demo hesaplar ve ürünler kalır
+- Test: `test_remove_demo_listings` (toplam 182)
+- Belge: gerçek hal fiyatı kaynağı araştırması (`docs/HAFTA9_API_ENTEGRASYONU.md`); AI kullanım günlüğü Hafta 9-10 notları
+
 ## [0.10.0] - 2026-11-18 — Hafta 10: Yapay zekâ bileşeni
 ### Eklendi
 - Fiyat trendi ve satış zamanı önerisi: `/uretici/urunler/<id>/fiyat-onerisi` (Ürünlerim → 📈 düğmesi)

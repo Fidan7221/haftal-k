@@ -91,6 +91,18 @@ python -m pytest tests/test_api_integration.py -v
 
 Gerçek servise geçmek için `.env` dosyasında `USE_MOCK_APIS=0` yapılır ve `PRICE_API_URL`, `PRICE_API_KEY`, `PAYMENT_API_URL`, `PAYMENT_API_KEY`, `PAYMENT_SECRET_KEY` doldurulur.
 
+### Gerçek fiyat kaynağı araştırması (18.11.2026)
+
+- İBB Açık Veri Portalı'nda (data.ibb.gov.tr) **"Hal Ürünleri ve Fiyatları Web Servisi"** var
+  (`halfiyatlaripublicdata.ibb.gov.tr`, kayıt son güncelleme: 2022). Portalın kendi API'siyle
+  (`/api/3/action/package_search`) bulundu.
+- Denendiğinde servisin Swagger arayüzü açıldı, ama uç nokta listesi (`/swagger/docs/v1`) bağlantıyı yanıt vermeden
+  kapattı ve resmi bir uç nokta belgesi bulunamadı. Tahmin edilen adresler 404 döndü. Aynı servisi deneyen bir açık kaynak
+  proje de Ekim 2026'da bağlantının reddedildiğini not etmiş.
+- Portalda günlük fiyat içeren başka indirilebilir veri seti (CSV/JSON) yok; "hal" verileri tonaj ve araç sayısı.
+- **Karar:** Fiyatlar sahte serviste (`MockPriceClient`) kalıyor ve sayfada "örnek (test) verisidir" yazıyor.
+  Kod gerçek servise hazır: çalışan bir kaynak bulununca yalnızca `.env` ayarları ve gerekirse `parse_items()` değişir.
+
 ## 7. Sözlü sınav soruları — cevaplarım
 
 1. **Ödeme akışını nasıl kurdun?** Sipariş oluşunca stok ayrılır ve sipariş "ödeme bekleniyor" durumuna geçer. Müşteri kart formunu doldurur; form Luhn ve son kullanma kontrolü yapar. `payment_service.pay_order` önce `INITIATED` kaydı yazar, sonra ödeme API'sini çağırır. Sonuca göre ödeme `SUCCESS` ve sipariş `PAID` olur, ya da ödeme `FAILED` olur. (Bölüm 5)
