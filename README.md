@@ -5,11 +5,12 @@ Bilgisayar Uygulamaları I — Proje Tabanlı Ders, Bingöl Üniversitesi Bilgis
 
 **Teknoloji:** Python 3 + Flask, SQLAlchemy, SQLite (yerel) / PostgreSQL (canlı), Bootstrap 5, pytest, Render
 **Canlı adres:** https://tarladan-sofraya.onrender.com
-**Sürüm:** `v0.8.3` (vize ara sürümü v0.8.0 + demo görselleri · [değişiklik günlüğü](CHANGELOG.md))
+**Sürüm:** `v0.10.0` (Hafta 10: yapay zekâ bileşeni · [değişiklik günlüğü](CHANGELOG.md))
 **Belgeler:** [Mimari şema](docs/MIMARI.md) · [ER diyagramı](docs/ER_DIYAGRAMI.md) ·
 [Güvenlik notu (Hafta 5)](docs/GUVENLIK_NOTU.md) · [Üretici ve Ürün modülü (Hafta 6)](docs/MODUL_URETICI_URUN.md) ·
 [İlan, Sepet, Sipariş (Hafta 7)](docs/MODUL_ILAN_SEPET_SIPARIS.md) · [Canlı yayın rehberi (Hafta 7)](docs/CANLI_YAYIN.md) ·
-[Ara sürüm ve entegrasyon (Hafta 8)](docs/HAFTA8_ARA_SURUM.md) · [Demo senaryosu](docs/DEMO_SENARYOSU.md) ·
+[Ara sürüm ve entegrasyon (Hafta 8)](docs/HAFTA8_ARA_SURUM.md) · [API entegrasyonu (Hafta 9)](docs/HAFTA9_API_ENTEGRASYONU.md) ·
+[Yapay zekâ bileşeni (Hafta 10)](docs/HAFTA10_YAPAY_ZEKA.md) · [Demo senaryosu](docs/DEMO_SENARYOSU.md) ·
 [AI kullanım günlüğü](docs/AI_KULLANIM_GUNLUGU.md) · [İlerleme raporu](docs/ILERLEME_RAPORU.md) · [Sözlü hazırlık (Hafta 8)](docs/SOZLU_HAFTA8.md)
 
 ## Haftalara göre durum
@@ -22,6 +23,8 @@ Bilgisayar Uygulamaları I — Proje Tabanlı Ders, Bingöl Üniversitesi Bilgis
 | 6 | Üretici ve ürün kaydı | `app/services/producer_service.py`, `app/routes/producer_routes.py`, `docs/MODUL_URETICI_URUN.md` |
 | 7 | İlan, sepet, sipariş + canlı yayın | `app/services/listing_service.py`, `cart_service.py`, `order_service.py`, `render.yaml`, `docs/MODUL_ILAN_SEPET_SIPARIS.md`, `docs/CANLI_YAYIN.md` |
 | 8 | **Vize:** entegrasyon, hata giderme, ara sürüm `v0.8.0` | `tests/test_integration.py`, `app/routes/admin_routes.py`, `CHANGELOG.md`, `docs/HAFTA8_ARA_SURUM.md`, `docs/DEMO_SENARYOSU.md` |
+| 9 | Harici API: hal fiyatı + ödeme, hata yönetimi `v0.9.0` | `app/integrations/`, `app/services/price_service.py`, `payment_service.py`, `tests/test_api_integration.py`, `docs/HAFTA9_API_ENTEGRASYONU.md` |
+| 10 | Yapay zekâ: fiyat trendi ve satış zamanı önerisi `v0.10.0` | `app/ai/`, `app/services/ai_service.py`, `tests/test_ai.py`, `docs/HAFTA10_YAPAY_ZEKA.md`, `docs/AI_KULLANIM_GUNLUGU.md` |
 
 ## Flask uygulamasını çalıştırma (VS Code terminali)
 
@@ -36,9 +39,10 @@ flask db upgrade                  # tabloları migrations_flask/ içindeki migra
 flask seed-db                     # roller ve kategoriler
 flask create-admin                # yönetici hesabı (isteğe bağlı)
 flask seed-demo                   # demo üretici/müşteri + ilanlar (.env'de DEMO_PASSWORD gerekir)
+flask fetch-prices --days 60      # hal fiyatları (Hafta 9; varsayılan: sahte servis, internet gerekmez)
 
 python run.py                     # http://127.0.0.1:5000
-python -m pytest                  # testler (98 test)
+python -m pytest                  # testler (181 test)
 ```
 
 ---

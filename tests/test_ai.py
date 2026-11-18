@@ -1,0 +1,303 @@
+"""Hafta 10 testleri: yapay zekâ bileşeni (fiyat trendi ve satış zamanı önerisi).
+
+Gerçek yapay zekâ API'si ÇAĞRILMAZ (para harcamaz, internete çıkmaz). Bunun yerine
+llm_advisor.create_client sahte bir istemciyle değiştirilir; sahte istemci istediğimiz
+yanıtı (doğru JSON, bozuk JSON, saçma fiyat, reddetme...) döndürür. Böylece
+"AI çıktısı hatalıysa ne yapıyorsun?" sorusunun cevabı test edilmiş olur.
+
+Çalıştırma: python -m pytest -v tests/test_ai.py
+"""
+import json
+from datetime import date, timedelta
+from types import SimpleNamespace
+
+import pytest
+
+from app.ai import llm_advisor
+from app.ai.trend import analyze, linear_regression, rule_based_advice
+from app.extensions import db
+from app.models import Category, MarketPrice, PricePrediction, Trend
+from app.services import ai_service, price_service
+from app.services.ai_service import MAX_DAILY_REFRESH, RULE_MODEL
+from tests.conftest import register_and_login
+from tests.test_shop import make_product
+
+TODAY = date(2026, 11, 18)
+
+
+def series(prices):
+    start = TODAY - timedelta(days=len(prices) - 1)
+    return [(start + timedelta(days=i), float(p)) for i, p in enumerate(prices)]
+
+
+RISING = series([20 + i * 0.5 for i in range(30)])     # günde +0,5 TL
+FALLING = series([40 - i * 0.5 for i in range(30)])
+FLAT = series([25 + (0.2 if i % 2 else -0.2) for i in range(30)])
+
+
+# --- 1) Sayısal analiz (yapay zekâsız) ---------------------------------------------------
+
+def test_linear_regression_exact_line():
+    slope, intercept, r2 = linear_regression([3, 5, 7, 9])  # y = 3 + 2x
+    assert slope == pytest.approx(2) and intercept == pytest.approx(3) and r2 == pytest.approx(1)
+
+
+@pytest.mark.parametrize("data, trend", [(RISING, Trend.UP), (FALLING, Trend.DOWN), (FLAT, Trend.STABLE)])
+def test_analyze_detects_trend(data, trend):
+    stats = analyze(data)
+    assert stats.trend == trend
+    assert stats.points == 30 and stats.last_date == TODAY
+
+
+def test_analyze_forecast_follows_line():
+    stats = analyze(RISING)
+    assert stats.forecast_price == pytest.approx(34.5 + 7 * 0.5)
+    assert stats.slope_per_day == pytest.approx(0.5)
+
+
+@pytest.mark.parametrize("data, word", [(RISING, "yükseliyor"), (FALLING, "düşüyor"), (FLAT, "yatay")])
+def test_rule_based_advice(data, word):
+    advice = rule_based_advice(analyze(data))
+    assert word in advice.recommendation and advice.source == "rule"
+    assert 0.2 <= advice.confidence <= 0.8 and advice.reasons
+
+
+# --- 2) Yapay zekâ çıktısını doğrulama ----------------------------------------------------
+
+def good_output(**overrides):
+    data = {"trend": "up", "predicted_price_7d": 37.5, "confidence": 0.7,
+            "recommendation": "Fiyat yükseliyor, satışı birkaç gün erteleyebilirsiniz.",
+            "reasons": ["Son 30 günde düzenli artış var."]}
+    data.update(overrides)
+    return data
+
+
+def test_valid_output_accepted():
+    advice, problems, warnings = llm_advisor.validate_output(good_output(), analyze(RISING))
+    assert advice is not None and not problems and not warnings
+    assert advice.source == "llm" and advice.predicted_price == 37.5
+
+
+@pytest.mark.parametrize("overrides, problem", [
+    ({"trend": "yukari"}, "Geçersiz trend"),
+    ({"predicted_price_7d": 340.0}, "Gerçekçi değil"),          # 10 kat fiyat
+    ({"predicted_price_7d": -1}, "pozitif"),
+    ({"predicted_price_7d": "37"}, "pozitif"),                  # metin, sayı değil
+    ({"confidence": 1.5}, "Güven"),
+    ({"confidence": True}, "Güven"),                            # bool sayı sayılmaz
+    ({"recommendation": ""}, "boş"),
+    ({"recommendation": "Detaylar için https://ornek.com adresine gidin."}, "bağlantı"),
+    ({"trend": "up", "predicted_price_7d": 30.0}, "çelişiyor"),  # yükseliyor deyip düşük fiyat
+])
+def test_invalid_output_rejected(overrides, problem):
+    advice, problems, _ = llm_advisor.validate_output(good_output(**overrides), analyze(RISING))
+    assert advice is None
+    assert any(problem in p for p in problems)
+
+
+def test_output_opposite_to_strong_data_rejected():
+    # Veriler net düşüş gösteriyor; model "yükseliyor" diyor
+    stats = analyze(FALLING)
+    output = good_output(trend="up", predicted_price_7d=stats.last_price * 1.05)
+    advice, problems, _ = llm_advisor.validate_output(output, stats)
+    assert advice is None and any("veriler açıkça" in p for p in problems)
+
+
+def test_mild_disagreement_lowers_confidence():
+    stats = analyze(FLAT)
+    output = good_output(trend="up", predicted_price_7d=stats.last_price * 1.04, confidence=0.9)
+    advice, problems, warnings = llm_advisor.validate_output(output, stats)
+    assert advice is not None and not problems
+    assert advice.confidence == 0.5 and warnings
+
+
+def test_prompt_contains_data_but_no_personal_info():
+    stats = analyze(RISING)
+    prompt = llm_advisor.build_prompt("Domates", "kg", RISING, stats)
+    assert "Domates" in prompt and "TL/kg" in prompt
+    assert RISING[0][0].isoformat() in prompt and "34.50" in prompt
+    assert "@" not in prompt  # e-posta vb. yok
+
+
+def test_parse_output_rejects_non_json():
+    with pytest.raises(llm_advisor.LlmError):
+        llm_advisor.parse_output("Tabii! İşte cevabım: yükseliyor")
+
+
+# --- 3) Uçtan uca: servis + sahte yapay zekâ istemcisi ------------------------------------
+
+class FakeClient:
+    """anthropic.Anthropic yerine geçer. client.beta.messages.create(...) çağrısını kaydeder."""
+
+    def __init__(self, text=None, stop_reason="end_turn", error=None):
+        self.requests = []
+        self.text, self.stop_reason, self.error = text, stop_reason, error
+        self.beta = SimpleNamespace(messages=SimpleNamespace(create=self._create))
+
+    def _create(self, **kwargs):
+        self.requests.append(kwargs)
+        if self.error:
+            raise self.error
+        content = [SimpleNamespace(type="text", text=self.text)] if self.text is not None else []
+        return SimpleNamespace(content=content, stop_reason=self.stop_reason, model=kwargs["model"])
+
+
+@pytest.fixture
+def producer_product(app, client, tmp_path):
+    register_and_login(client, "ciftci@test.com")
+    product = make_product("ciftci@test.com", name="Salkım Domates")
+    price_service.sync_prices(days=30)
+    app.config["AI_LOG_PATH"] = str(tmp_path / "ai_gunlugu.jsonl")
+    return product
+
+
+@pytest.fixture
+def fake_ai(app, monkeypatch):
+    """Yapay zekâyı aç ve sahte istemciyi tak. fake_ai(text=..., ...) ile yanıt ayarlanır."""
+    app.config["AI_ENABLED"] = True
+
+    def install(**kwargs):
+        client = FakeClient(**kwargs)
+        monkeypatch.setattr(llm_advisor, "create_client", lambda config: client)
+        return client
+    return install
+
+
+def _matching_output(product):
+    stats = analyze(price_service.price_series("Domates"))
+    return json.dumps({"trend": stats.trend, "predicted_price_7d": stats.forecast_price,
+                       "confidence": 0.66, "recommendation": "Sahte model önerisi: ürününüzü planlı satın.",
+                       "reasons": ["Test gerekçesi"]})
+
+
+def test_match_market_name(producer_product):
+    assert price_service.match_market_name(producer_product) == "Domates"
+
+
+@pytest.mark.parametrize("name, category, expected", [
+    ("Kapya Biber", "Biber", "Biber"), ("Çiçek Balı", "Çiçek Balı", "Bal"),
+    ("Köy Tereyağı", "Tereyağı", "Tereyağı"), ("Gün Kurusu Kayısı", "Kayısı", "Kayısı"),
+    ("ELMA", "Meyve", "Elma"), ("Balkabağı", "Sebze", None),  # "bal" ile eşleşmemeli
+])
+def test_match_market_name_cases(app, monkeypatch, name, category, expected):
+    monkeypatch.setattr(price_service, "market_names", lambda: ["Domates", "Biber", "Bal", "Tereyağı",
+                                                                "Kayısı", "Elma"])
+    product = SimpleNamespace(name=name, category=SimpleNamespace(name=category))
+    assert price_service.match_market_name(product) == expected
+
+
+def test_ai_disabled_uses_rule_based(producer_product):
+    result = ai_service.suggest_for_product(producer_product)
+    assert not result.used_ai and result.prediction.model_name == RULE_MODEL
+    assert any("ANTHROPIC_API_KEY" in note for note in result.notes)
+    assert PricePrediction.query.count() == 1
+
+
+def test_same_day_uses_saved_prediction(producer_product, fake_ai):
+    fake = fake_ai(text=_matching_output(producer_product))
+    ai_service.suggest_for_product(producer_product)
+    second = ai_service.suggest_for_product(producer_product)
+    assert second.from_cache and len(fake.requests) == 1  # API ikinci kez çağrılmadı
+    assert PricePrediction.query.count() == 1
+
+
+def test_refresh_limit(producer_product):
+    for _ in range(MAX_DAILY_REFRESH):
+        ai_service.suggest_for_product(producer_product, refresh=True)
+    with pytest.raises(Exception, match="en fazla"):
+        ai_service.suggest_for_product(producer_product, refresh=True)
+
+
+def test_valid_ai_output_is_used_and_logged(app, producer_product, fake_ai):
+    fake = fake_ai(text=_matching_output(producer_product))
+    result = ai_service.suggest_for_product(producer_product)
+    assert result.used_ai and result.prediction.model_name == "claude-opus-5-5"
+    assert result.advice.recommendation.startswith("Sahte model önerisi")
+
+    request = fake.requests[0]
+    assert request["output_config"]["format"]["type"] == "json_schema"  # yapılandırılmış çıktı
+    assert request["system"] == llm_advisor.SYSTEM_PROMPT
+
+    with open(app.config["AI_LOG_PATH"], encoding="utf-8") as file:
+        entry = json.loads(file.readline())
+    assert entry["kullanilan"] == "yapay_zeka" and entry["istem"] and entry["ham_cikti"]
+
+
+@pytest.mark.parametrize("kwargs, reason", [
+    ({"text": "bu json değil"}, "geçerli JSON değil"),
+    ({"text": json.dumps({"trend": "up", "predicted_price_7d": 9999, "confidence": 0.9,
+                          "recommendation": "Çok yükselecek, bekleyin!", "reasons": []})}, "Gerçekçi değil"),
+    ({"text": "", "stop_reason": "refusal"}, "refusal"),
+    ({"text": "{\"trend\": \"up\"", "stop_reason": "max_tokens"}, "yarıda kesildi"),
+    ({"text": ""}, "boş yanıt"),
+])
+def test_bad_ai_output_falls_back_to_rules(app, producer_product, fake_ai, kwargs, reason):
+    fake_ai(**kwargs)
+    result = ai_service.suggest_for_product(producer_product)
+    assert not result.used_ai and result.prediction.model_name == RULE_MODEL
+    assert any(reason in note for note in result.notes)
+    entries = ai_service.read_log()
+    assert entries[0]["kullanilan"] == "kural_tabanli"
+
+
+def test_api_errors_fall_back_to_rules(producer_product, fake_ai):
+    import anthropic
+    import httpx2 as httpx
+
+    request = httpx.Request("POST", "https://api.anthropic.com/v1/messages")
+    fake_ai(error=anthropic.APITimeoutError(request=request))
+    result = ai_service.suggest_for_product(producer_product)
+    assert not result.used_ai and any("zaman aşımı" in n for n in result.notes)
+
+
+def test_product_without_market_price(app, client):
+    register_and_login(client, "ciftci@test.com")
+    product = make_product("ciftci@test.com", name="Kivi")
+    product.category = Category.query.filter_by(slug="meyve").one()  # ne adı ne kategorisi eşleşir
+    db.session.commit()
+    price_service.sync_prices(days=20)
+    assert MarketPrice.query.count() > 0  # fiyat VAR ama bu ürüne ait değil
+    page = client.get(f"/uretici/urunler/{product.id}/fiyat-onerisi").get_data(as_text=True)
+    assert "eşleşen ürün bulunamadı" in page
+
+
+def test_not_enough_data(app, client):
+    register_and_login(client, "ciftci@test.com")
+    product = make_product("ciftci@test.com", name="Domates")
+    price_service.sync_prices(days=5)
+    page = client.get(f"/uretici/urunler/{product.id}/fiyat-onerisi").get_data(as_text=True)
+    assert "en az 14 günlük fiyat" in page
+
+
+# --- 4) Sayfa ve yetki --------------------------------------------------------------------
+
+def test_suggestion_page_and_refresh(client, producer_product):
+    page = client.get(f"/uretici/urunler/{producer_product.id}/fiyat-onerisi").get_data(as_text=True)
+    assert "Fiyat Trendi ve Satış Zamanı" in page and "<polyline" in page
+    assert "Kural tabanlı öneri" in page and "Bu bir <strong>öneridir</strong>" in page
+    refreshed = client.post(f"/uretici/urunler/{producer_product.id}/fiyat-onerisi", follow_redirects=True)
+    assert "Öneri yeniden hesaplandı" in refreshed.get_data(as_text=True)
+    assert PricePrediction.query.count() == 2
+
+
+def test_other_producer_gets_404(client, producer_product):
+    client.post("/auth/logout")
+    register_and_login(client, "baska@test.com", farm_name="Başka Çiftlik")
+    assert client.get(f"/uretici/urunler/{producer_product.id}/fiyat-onerisi").status_code == 404
+
+
+def test_customer_gets_403(client, producer_product):
+    client.post("/auth/logout")
+    register_and_login(client, "musteri@test.com", role="customer")
+    assert client.get(f"/uretici/urunler/{producer_product.id}/fiyat-onerisi").status_code == 403
+
+
+def test_admin_ai_log_page(app, client, producer_product, fake_ai):
+    from app.services.auth_service import create_admin_user
+    fake_ai(text="bozuk")
+    ai_service.suggest_for_product(producer_product)
+    client.post("/auth/logout")
+    create_admin_user("Yönetici", "yonetici@test.com", "Parola123")
+    client.post("/auth/login", data={"email": "yonetici@test.com", "password": "Parola123"})
+    page = client.get("/yonetici/ai-gunlugu").get_data(as_text=True)
+    assert "Domates" in page and "Reddedildi" in page and "geçerli JSON değil" in page

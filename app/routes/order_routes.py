@@ -3,14 +3,15 @@
 Müşteri: /siparislerim               (kendi siparişleri)
 Üretici: /uretici/siparisler         (kendi ürünlerinin siparişleri)
 Durum değişikliği: POST /siparis/<id>/durum  (kim neyi yapabilir -> order_service.TRANSITIONS)
+Ödeme (Hafta 9):  /siparislerim/<id>/odeme   (kart formu -> payment_service -> ödeme API'si)
 """
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 
-from app.forms.shop_forms import OrderStatusForm
+from app.forms.shop_forms import OrderStatusForm, PaymentForm
 from app.models import OrderStatus, RoleName
 from app.repositories.order_repository import OrderRepository
-from app.services import order_service
+from app.services import order_service, payment_service
 from app.services.errors import ServiceError
 from app.utils.decorators import role_required
 
@@ -56,7 +57,33 @@ def producer_detail(order_id):
 def _render_detail(order, producer_view):
     return render_template("orders/detail.html", order=order, producer_view=producer_view,
                            actions=order_service.allowed_actions(current_user, order),
+                           can_pay=order_service.can_pay(current_user, order),
                            status_form=OrderStatusForm(), statuses=OrderStatus)
+
+
+@order_bp.route("/siparislerim/<int:order_id>/odeme", methods=["GET", "POST"])
+@role_required(RoleName.CUSTOMER)
+def pay(order_id):
+    order = order_service.get_customer_order(current_user, order_id)
+    if order is None:
+        abort(404)
+    if not order_service.can_pay(current_user, order):
+        flash("Bu sipariş için ödeme beklenmiyor.", "info")
+        return redirect(url_for("order.customer_detail", order_id=order.id))
+
+    form = PaymentForm()
+    if form.validate_on_submit():
+        try:
+            payment_service.pay_order(current_user, order, form.to_card())
+        except ServiceError as error:
+            flash(error.message, "danger")
+        else:
+            flash(f"Ödeme alındı. Sipariş #{order.id} üreticiye iletildi.", "success")
+            return redirect(url_for("order.customer_detail", order_id=order.id))
+    # Kart bilgisi sayfaya geri YAZILMAZ (hata olsa bile kullanıcı yeniden girer)
+    form.card_number.data = form.cvc.data = None
+    return render_template("orders/payment.html", form=form, order=order,
+                           test_mode=payment_service.is_test_mode())
 
 
 @order_bp.route("/siparis/<int:order_id>/durum", methods=["POST"])

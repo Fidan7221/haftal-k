@@ -71,12 +71,26 @@
         {% endif %}
       </div>
     </div>
-    <div class="col-lg-4">
-      <a href="{{ url_for('admin.categories') }}" class="card stat-card text-decoration-none text-reset h-100">
+    <div class="col-lg-4 d-flex flex-column gap-3">
+      <a href="{{ url_for('admin.categories') }}" class="card stat-card text-decoration-none text-reset">
         <div class="card-body">
           <i class="bi bi-diagram-3 fs-3 text-farm"></i>
           <div class="fw-semibold mt-2">Kategori yönetimi</div>
           <div class="small text-muted">Ürün kategorilerini ekle, düzenle, sil</div>
+        </div>
+      </a>
+      <a href="{{ url_for('price.index') }}" class="card stat-card text-decoration-none text-reset">
+        <div class="card-body">
+          <i class="bi bi-graph-up fs-3 text-farm"></i>
+          <div class="fw-semibold mt-2">Hal fiyatları</div>
+          <div class="small text-muted">Fiyat API'sinden güncelle (Hafta 9)</div>
+        </div>
+      </a>
+      <a href="{{ url_for('admin.ai_log') }}" class="card stat-card text-decoration-none text-reset">
+        <div class="card-body">
+          <i class="bi bi-journal-code fs-3 text-farm"></i>
+          <div class="fw-semibold mt-2">Yapay zekâ günlüğü</div>
+          <div class="small text-muted">İstemler, çıktılar ve doğrulama sonuçları (Hafta 10)</div>
         </div>
       </a>
     </div>

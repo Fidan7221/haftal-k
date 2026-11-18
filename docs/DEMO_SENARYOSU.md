@@ -43,7 +43,8 @@
 2. **Gün Kurusu Kayısı** (Üretici 2) ilanından `1` kg ekle → **Sepet**: kalemler üreticiye göre gruplu.
 3. **Siparişe geç** → adres: `Örnek Mah. Deneme Sok. No:5 Merkez / Bingöl` (uydurma) → **Siparişi Oluştur**.
    Mesaj: "Sepetiniz 2 üreticiye ait olduğu için 2 ayrı sipariş oluşturuldu."
-4. Domates siparişini aç → **Öde (deneme ödemesi)** → durum "Ödendi · hazırlanıyor".
+4. Domates siparişini aç → **Öde** → test kartı `4111 1111 1111 1111`, son kullanma `12/30`, CVC `123` → durum "Ödendi · hazırlanıyor".
+   (Hafta 9: `4000 0000 0000 0002` ile reddedilen ödemeyi de gösterebilirsiniz; sipariş "ödeme bekleniyor"da kalır.)
 
 **Söyle:** "Ödeme adımı tek bir transaction: stok kontrolü, sipariş, fiyatın kopyalanması, iki stoğun düşmesi ve sepetin boşalması. Biri başarısız olursa hepsi geri alınır (rollback). Ödeme şimdilik sahte; Hafta 9'da gerçek API gelecek."
 
@@ -68,11 +69,19 @@
 **Söyle:** "Bu ekran entegrasyonun özeti: her sayı başka bir modülün tablosundan geliyor. Kullanıcılar Hafta 5'ten, ürünler Hafta 6'dan, ilan ve sipariş Hafta 7'den."
 
 ## Adım 8 — Testler ve sürüm (45 sn) — VS Code
-1. Terminal: `python -m pytest` → **98 passed**.
+1. Terminal: `python -m pytest` → **181 passed** (Hafta 8'de 98'di).
 2. `tests/test_integration.py` → `test_end_to_end_happy_path`: "Az önce gösterdiğim senaryonun otomatik hâli."
 3. `git tag` → `v0.8.0` … `v0.8.3`; `CHANGELOG.md` → ilgili bölümler.
 
 **Söyle:** "Bu hafta 4 entegrasyon hatası buldum. Her biri için önce hatayı yakalayan bir regresyon testi yazdım, sonra düzelttim."
+
+## Ek — Hafta 9 ve 10 gösterimi (2 dk)
+1. **Hal Fiyatları** menüsü → son fiyatlar ve 7 günlük değişim. Yönetici olarak **Fiyatları güncelle** → ikinci basışta "hız sınırı" mesajı.
+2. Müşteri olarak yeni sipariş → **Öde** → önce `4000 0000 0000 0002` (reddedilir, sipariş bekliyor), sonra `4111 1111 1111 1111` (ödendi).
+3. Üretici olarak **Ürünlerim** → Salkım Domates kartındaki 📈 düğmesi → grafik, göstergeler, öneri ve kaynağı ("Yapay zekâ" / "Kural tabanlı").
+4. Yönetici: **Yapay zekâ günlüğü** → istem, ham çıktı, doğrulama sonucu.
+
+**Söyle:** "Dış servis çökerse veya yapay zekâ saçma bir cevap verirse uygulama çökmüyor: ödemede sipariş bekliyor, öneride kural tabanlı sonuca düşüyor. İkisinin de testi var."
 
 ---
 

@@ -1,14 +1,14 @@
-"""Yönetici rotaları (Hafta 6: kategori yönetimi, Hafta 8: panel özeti ve sipariş takibi)."""
+"""Yönetici rotaları (Hafta 6: kategoriler, Hafta 8: panel ve siparişler, Hafta 9-10: fiyat ve AI günlüğü)."""
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 from flask_login import current_user
 
 from app.forms.admin_forms import CategoryForm
 from app.forms.producer_forms import DeleteForm
-from app.forms.shop_forms import OrderStatusForm
+from app.forms.shop_forms import ActionForm, OrderStatusForm
 from app.models import OrderStatus, RoleName
 from app.repositories.order_repository import OrderRepository, StatsRepository
 from app.repositories.product_repository import CategoryRepository
-from app.services import category_service, order_service
+from app.services import ai_service, category_service, order_service, price_service
 from app.services.errors import ServiceError
 from app.utils.decorators import role_required
 from app.utils.forms import show_service_error
@@ -53,6 +53,36 @@ def order_detail(order_id):
     return render_template("orders/detail.html", order=order, producer_view=True, admin_view=True,
                            actions=order_service.allowed_actions(current_user, order),
                            status_form=OrderStatusForm(), statuses=OrderStatus)
+
+
+# --- Hafta 9: Hal fiyatlarını harici API'den güncelleme ------------------------------
+
+@admin_bp.route("/fiyatlar/guncelle", methods=["POST"])
+@role_required(RoleName.ADMIN)
+def sync_prices():
+    if not ActionForm().validate_on_submit():
+        abort(400)
+    allowed, remaining = price_service.manual_sync_allowed()
+    if not allowed:
+        flash(f"Fiyatlar az önce güncellendi. {remaining} sn sonra tekrar deneyin (hız sınırı).", "warning")
+        return redirect(url_for("price.index"))
+    price_service.mark_manual_sync()
+    report = price_service.sync_prices(days=30)
+    flash(f"Fiyat güncelleme: {report['days']} gün çekildi, {report['inserted']} yeni, "
+          f"{report['updated']} güncellenen kayıt; {report['cached_days']} gün zaten vardı.",
+          "success" if not report["errors"] else "warning")
+    for error in report["errors"][:3]:
+        flash(error, "danger")
+    return redirect(url_for("price.index"))
+
+
+# --- Hafta 10: Yapay zekâ günlüğü (istem ve çıktılar) ---------------------------------
+
+@admin_bp.route("/ai-gunlugu")
+@role_required(RoleName.ADMIN)
+def ai_log():
+    return render_template("admin/ai_log.html", entries=ai_service.read_log(limit=50),
+                           ai_status=ai_service.ai_status())
 
 
 # --- Hafta 6: Kategori yönetimi ------------------------------------------------

@@ -62,8 +62,14 @@ def checkout(client, address="Yenişehir Mah. Örnek Sok. No:1 Merkez / Bingöl"
 
 
 def set_status(client, order, new_status):
+    if new_status == OrderStatus.PAID:  # Hafta 9: ödeme yalnızca kart formuyla
+        return client.post(f"/siparislerim/{order.id}/odeme", data=TEST_CARD, follow_redirects=True)
     return client.post(f"/siparis/{order.id}/durum", data={"new_status": new_status},
                        follow_redirects=True)
+
+
+TEST_CARD = {"card_holder": "Deneme Kullanıcı", "card_number": "4111 1111 1111 1111",
+             "expiry": "12/39", "cvc": "123"}
 
 
 # --- İLAN ---------------------------------------------------------------------------

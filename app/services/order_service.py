@@ -21,14 +21,13 @@ SEPETTEN SİPARİŞE GEÇİŞ (checkout) tek bir işlem (transaction) içinde ya
   5) Sepet boşaltılır.
   Bir adım bile başarısız olursa rollback: ne sipariş oluşur ne stok düşer.
 """
-import uuid
-from datetime import datetime, timezone
 from decimal import Decimal
 
-from app.models import ListingStatus, Order, OrderItem, OrderStatus, Payment, PaymentStatus
+from app.models import ListingStatus, Order, OrderItem, OrderStatus
 from app.repositories.cart_repository import CartRepository
 from app.repositories.listing_repository import ListingRepository
 from app.repositories.order_repository import OrderRepository
+from app.services import payment_service
 from app.services.cart_service import item_problem
 from app.services.errors import ServiceError
 
@@ -37,7 +36,7 @@ CUSTOMER, PRODUCER, ADMIN = "customer", "producer", "admin"
 # {mevcut durum: {yeni durum: {bu geçişi yapabilecek roller}}}
 TRANSITIONS = {
     OrderStatus.PENDING: {
-        OrderStatus.PAID: {CUSTOMER},                         # müşteri öder (Hafta 9'da gerçek ödeme)
+        OrderStatus.PAID: {CUSTOMER},                         # yalnızca ödeme formuyla (payment_service)
         OrderStatus.CANCELLED: {CUSTOMER, PRODUCER, ADMIN},
     },
     OrderStatus.PAID: {
@@ -52,8 +51,9 @@ TRANSITIONS = {
 }
 
 # Düğmelerde görünecek metinler
+# Hafta 9: "Öde" artık bir durum düğmesi değil; kart bilgisiyle ödeme formu açılır
+# (payment_service.pay_order). Bu yüzden PAID burada yok.
 ACTION_LABELS = {
-    OrderStatus.PAID: "Öde (deneme ödemesi)",
     OrderStatus.SHIPPED: "Kargoya verdim",
     OrderStatus.DELIVERED: "Teslim alındı",
     OrderStatus.CANCELLED: "Siparişi iptal et",
@@ -80,8 +80,13 @@ def allowed_actions(user, order):
     return [
         (new_status, ACTION_LABELS[new_status])
         for new_status, roles in TRANSITIONS.get(order.status, {}).items()
-        if role in roles
+        if role in roles and new_status in ACTION_LABELS
     ]
+
+
+def can_pay(user, order):
+    """Ödeme formu bu kullanıcıya bu siparişte gösterilsin mi?"""
+    return order.status == OrderStatus.PENDING and actor_role(user, order) == CUSTOMER
 
 
 def customer_orders(user):
@@ -185,31 +190,21 @@ def change_status(user, order, new_status):
             f"'{OrderStatus.LABELS.get(new_status, new_status)}' durumuna geçemez.")
     if role not in possible[new_status]:
         raise ServiceError("Bu işlemi yapma yetkiniz yok.")
+    if new_status == OrderStatus.PAID:
+        # Hafta 9: Ödeme durumu elle seçilemez; para gerçekten alınınca payment_service yapar
+        raise ServiceError("Ödeme yalnızca ödeme formundan yapılabilir.")
 
     try:
-        if new_status == OrderStatus.PAID:
-            _mock_payment(order)
-        elif new_status == OrderStatus.CANCELLED:
+        if new_status == OrderStatus.CANCELLED:
+            # Önce iade (harici API). Başarısızsa ServiceError -> rollback, sipariş iptal olmaz
+            payment_service.refund_payment(order.payment)
             _restore_stock(order)
-            if order.payment is not None and order.payment.status == PaymentStatus.SUCCESS:
-                order.payment.status = PaymentStatus.REFUNDED  # ödenmiş sipariş -> iade
         order.status = new_status
         OrderRepository.commit()
     except Exception:
         OrderRepository.rollback()
         raise
     return order
-
-
-def _mock_payment(order):
-    """Hafta 9'da gerçek ödeme API'si gelene kadar sahte (mock) ödeme kaydı."""
-    order.payment = Payment(
-        provider="mock",
-        transaction_ref=f"MOCK-{uuid.uuid4().hex[:12].upper()}",
-        amount=order.total_amount,
-        status=PaymentStatus.SUCCESS,
-        paid_at=datetime.now(timezone.utc),
-    )
 
 
 def _restore_stock(order):

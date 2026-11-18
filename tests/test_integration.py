@@ -73,8 +73,14 @@ def producer_with_listing(client, email, farm, product_name, price="30", stock="
 
 
 def set_status(client, order_id, new_status):
+    if new_status == OrderStatus.PAID:  # Hafta 9: ödeme yalnızca kart formuyla
+        return client.post(f"/siparislerim/{order_id}/odeme", data=TEST_CARD, follow_redirects=True)
     return client.post(f"/siparis/{order_id}/durum", data={"new_status": new_status},
                        follow_redirects=True)
+
+
+TEST_CARD = {"card_holder": "Deneme Kullanıcı", "card_number": "4111 1111 1111 1111",
+             "expiry": "12/39", "cvc": "123"}
 
 
 ADDRESS = "Yenişehir Mah. Örnek Sok. No:1 Merkez / Bingöl"  # uydurma adres (KVKK)
@@ -112,7 +118,7 @@ def test_end_to_end_happy_path(client):
     assert listing.stock_quantity == Decimal("36")
     assert product.stock_quantity == Decimal("96")
 
-    # Müşteri öder (mock ödeme, Hafta 9'da gerçeği gelecek)
+    # Müşteri öder (Hafta 9: kart formu + ödeme API'si, test modunda)
     set_status(client, order.id, OrderStatus.PAID)
     db.session.refresh(order)
     assert order.status == OrderStatus.PAID

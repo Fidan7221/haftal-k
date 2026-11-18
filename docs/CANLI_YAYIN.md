@@ -80,7 +80,7 @@ Sunumda gösterilecek akış:
 1. **Ana sayfa** ve **İlanlar**: 6 demo ilan görünür.
 2. **Müşteri** ile giriş: `musteri@example.com` / DEMO_PASSWORD
    → ilan aç → **Sepete ekle** → iki farklı üreticiden ürün ekleyin → **Siparişe geç** → adres yazın
-   → "2 ayrı sipariş oluşturuldu" → sipariş detayında **Öde (deneme ödemesi)**.
+   → "2 ayrı sipariş oluşturuldu" → sipariş detayında **Öde** → test kartı `4111 1111 1111 1111` (Hafta 9).
 3. **Üretici** ile giriş: `uretici1@example.com` (veya `uretici2@example.com`) / DEMO_PASSWORD
    → **Siparişler** → ödenmiş sipariş → **Kargoya verdim**. **İlanlarım**'da stoğun düştüğünü gösterin.
 4. Müşteriye dönüp **Teslim alındı**.

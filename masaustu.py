@@ -74,11 +74,16 @@ def build_app(folder):
     # Kapatılmazsa tarayıcı oturum çerezini geri göndermez ve giriş yapılamaz.
     app.config["SESSION_COOKIE_SECURE"] = False
     app.config["REMEMBER_COOKIE_SECURE"] = False
+    # Hafta 10: AI günlüğü .exe klasörüne değil veri klasörüne yazılır (orası yazılabilir)
+    app.config["AI_LOG_PATH"] = os.path.join(folder, "ai_gunlugu.jsonl")
+
+    from app.services.price_service import sync_prices
 
     with app.app_context():
         db.create_all()   # tablolar yoksa oluşturur, varsa dokunmaz
         seed_all()        # roller + kategoriler (kopya eklemez)
         seed_demo()       # demo üretici/müşteri/yönetici ve ürünler (yalnızca ilk sefer)
+        sync_prices(days=60)  # Hafta 9: hal fiyatları (olan günleri tekrar çekmez)
     return app
 
 

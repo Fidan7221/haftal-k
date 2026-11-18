@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% from "_shop_macros.html" import tl %}
+{% block title %}Hal Fiyatları{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+    <div>
+      <h1 class="h3 fw-bold mb-1"><i class="bi bi-graph-up text-farm"></i> Hal Fiyatları</h1>
+      {% if latest_day %}<div class="text-muted small">Son güncelleme: {{ latest_day.strftime('%d.%m.%Y') }}</div>{% endif %}
+    </div>
+    {% if current_user.is_authenticated and current_user.is_admin %}
+      <form method="post" action="{{ url_for('admin.sync_prices') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-farm"><i class="bi bi-arrow-repeat"></i> Fiyatları güncelle</button>
+      </form>
+    {% endif %}
+  </div>
+
+  {% if sample_data and rows %}
+    <div class="alert alert-info small">
+      <i class="bi bi-info-circle"></i> Bu fiyatlar <strong>örnek (test) verisidir</strong>; gerçek hal fiyatı
+      servisi bağlanınca (<code>USE_MOCK_APIS=0</code>) gerçek fiyatlar görünür.
+    </div>
+  {% endif %}
+
+  {% if rows %}
+    <div class="card border-0 shadow-sm">
+      <div class="table-responsive">
+        <table class="table mb-0 align-middle">
+          <thead class="table-light small">
+            <tr><th>Ürün</th><th>Birim</th><th class="text-end">En düşük</th><th class="text-end">Ortalama</th>
+                <th class="text-end">En yüksek</th><th class="text-end">7 günlük değişim</th></tr>
+          </thead>
+          <tbody>
+            {% for item in rows %}
+              {% set r = item.row %}
+              <tr>
+                <td class="fw-semibold">{{ r.product_name }}</td>
+                <td>{{ r.unit }}</td>
+                <td class="text-end text-nowrap">{{ tl(r.min_price) }}</td>
+                <td class="text-end text-nowrap fw-semibold">{{ tl(r.avg_price) }}</td>
+                <td class="text-end text-nowrap">{{ tl(r.max_price) }}</td>
+                <td class="text-end text-nowrap">
+                  {% if item.change_pct is none %}<span class="text-muted">—</span>
+                  {% elif item.change_pct > 0.5 %}<span class="text-success"><i class="bi bi-arrow-up-right"></i> %{{ "%.1f"|format(item.change_pct) }}</span>
+                  {% elif item.change_pct < -0.5 %}<span class="text-danger"><i class="bi bi-arrow-down-right"></i> %{{ "%.1f"|format(item.change_pct|abs) }}</span>
+                  {% else %}<span class="text-muted"><i class="bi bi-arrow-right"></i> %{{ "%.1f"|format(item.change_pct|abs) }}</span>{% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% if current_user.is_authenticated and current_user.is_producer %}
+      <p class="small text-muted mt-3 mb-0">
+        <i class="bi bi-lightbulb"></i> Ürünleriniz için satış zamanı önerisi:
+        <a href="{{ url_for('producer.products') }}" class="link-farm">Ürünlerim</a> sayfasındaki
+        <i class="bi bi-graph-up-arrow"></i> düğmesi.
+      </p>
+    {% endif %}
+  {% else %}
+    <div class="text-center text-muted py-5">
+      <i class="bi bi-inbox display-5 d-block mb-2"></i>
+      Henüz fiyat verisi yok.
+      {% if current_user.is_authenticated and current_user.is_admin %}Yukarıdaki düğmeyle fiyatları çekebilirsiniz.
+      {% else %}Yönetici fiyatları güncellediğinde burada görünecek.{% endif %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

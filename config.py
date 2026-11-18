@@ -19,6 +19,14 @@ load_dotenv(os.path.join(BASE_DIR, ".env"))
 DEV_SECRET_KEY = "gelistirme-icin-gecici-anahtar"
 
 
+def _env_bool(name, default):
+    """"1/true/evet" -> True, "0/false/hayir" -> False, boşsa varsayılan."""
+    value = os.environ.get(name, "").strip().lower()
+    if not value:
+        return default
+    return value in ("1", "true", "yes", "evet", "on")
+
+
 def database_url():
     """DATABASE_URL ortam değişkenini SQLAlchemy'nin anlayacağı biçime getirir (Hafta 7).
 
@@ -64,11 +72,32 @@ class Config:
     # Sayfalama
     ITEMS_PER_PAGE = 12
 
-    # Harici API ayarları (Hafta 9)
-    PRICE_API_URL = os.environ.get("PRICE_API_URL", "")
-    PAYMENT_API_KEY = os.environ.get("PAYMENT_API_KEY", "")
-    PAYMENT_SECRET_KEY = os.environ.get("PAYMENT_SECRET_KEY", "")
-    USE_MOCK_APIS = True  # Gerçek API hazır olana kadar sahte servis kullan
+    # --- Harici API ayarları (Hafta 9) ---
+    # Anahtarlar KODA YAZILMAZ: yalnızca ortam değişkeninden (.env / Render paneli) okunur.
+    # USE_MOCK_APIS=1 (varsayılan): sahte servisler kullanılır, internet ve anahtar gerekmez.
+    # USE_MOCK_APIS=0: PRICE_API_URL / PAYMENT_API_URL adreslerine gerçek istek atılır.
+    USE_MOCK_APIS = _env_bool("USE_MOCK_APIS", True)
+    PRICE_API_URL = os.environ.get("PRICE_API_URL", "").strip()
+    PRICE_API_KEY = os.environ.get("PRICE_API_KEY", "").strip()
+    PAYMENT_API_URL = os.environ.get("PAYMENT_API_URL", "").strip()
+    PAYMENT_API_KEY = os.environ.get("PAYMENT_API_KEY", "").strip()
+    PAYMENT_SECRET_KEY = os.environ.get("PAYMENT_SECRET_KEY", "").strip()
+    # Zaman aşımı (saniye): karşı sunucu bu sürede yanıt vermezse istek kesilir
+    PRICE_API_TIMEOUT = 5
+    PAYMENT_API_TIMEOUT = 10
+    API_MAX_RETRIES = 2              # 429 / 5xx / zaman aşımında en fazla 2 kez daha dene
+    PRICE_API_MIN_INTERVAL = 0.5     # Hız sınırı: iki fiyat isteği arasında en az 0,5 sn bekle
+    PRICE_SYNC_COOLDOWN = 60         # Yönetici "Fiyatları güncelle"ye en sık dakikada bir basabilir
+
+    # --- Yapay zekâ bileşeni (Hafta 10) ---
+    # Anahtar yine yalnızca ortam değişkeninde: ANTHROPIC_API_KEY. Yoksa bileşen
+    # kural tabanlı (yapay zekâsız) öneriye düşer; uygulama yine çalışır.
+    AI_ENABLED = _env_bool("AI_ENABLED", True) and bool(os.environ.get("ANTHROPIC_API_KEY", "").strip())
+    AI_MODEL = os.environ.get("AI_MODEL", "claude-opus-5-5").strip()
+    AI_TIMEOUT = 30                  # saniye
+    AI_MIN_POINTS = 14               # Trend için en az 14 günlük fiyat gerekir
+    AI_HISTORY_DAYS = 60             # Modele gönderilen en fazla gün sayısı
+    AI_LOG_PATH = os.path.join(BASE_DIR, "instance", "ai_gunlugu.jsonl")  # istem/çıktı günlüğü
 
 
 class DevelopmentConfig(Config):
@@ -80,6 +109,12 @@ class TestingConfig(Config):
     TESTING = True
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
     WTF_CSRF_ENABLED = False  # Testlerde form göndermeyi kolaylaştırır
+    # Testler internete ÇIKMAZ ve para/anahtar harcamaz: her zaman sahte servis
+    USE_MOCK_APIS = True
+    AI_ENABLED = False
+    AI_LOG_PATH = None
+    PRICE_API_MIN_INTERVAL = 0
+    PRICE_SYNC_COOLDOWN = 0
 
 
 class ProductionConfig(Config):
@@ -88,9 +123,6 @@ class ProductionConfig(Config):
     REMEMBER_COOKIE_SECURE = True
     # Bulut veri tabanı boşta kalınca bağlantıyı kapatabilir; her istekte bağlantı sınanır
     SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True, "pool_recycle": 280}
-    # Hafta 9'da gerçek API anahtarları girilince False yapılacak. Şimdilik canlıda da
-    # sahte (mock) ödeme kullanılıyor; aksi hâlde canlı sitede ödeme adımı çalışmazdı.
-    USE_MOCK_APIS = True
 
 
 config_by_name = {

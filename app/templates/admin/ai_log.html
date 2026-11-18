@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Yapay Zekâ Günlüğü{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 fw-bold mb-0"><i class="bi bi-journal-code text-farm"></i> Yapay Zekâ Günlüğü</h1>
+    <span class="badge {{ 'text-bg-success' if ai_status[0] else 'text-bg-secondary' }}">{{ ai_status[1] }}</span>
+  </div>
+  <p class="text-muted small">Her yapay zekâ çağrısının istemi (prompt), ham çıktısı ve doğrulama sonucu burada saklanır
+    (<code>instance/ai_gunlugu.jsonl</code>). Son 50 kayıt, en yenisi üstte.</p>
+
+  {% for e in entries %}
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header bg-white d-flex flex-wrap justify-content-between gap-2 small">
+        <span><strong>{{ e.hal_urunu }}</strong> · ürün #{{ e.urun_id }} · {{ e.model }} · istem {{ e.istem_surumu }}</span>
+        <span>
+          {% if e.kullanilan == "yapay_zeka" %}<span class="badge text-bg-success">Kullanıldı</span>
+          {% else %}<span class="badge text-bg-warning">Reddedildi → kural tabanlı</span>{% endif %}
+          <span class="text-muted ms-2">{{ e.zaman }}</span>
+        </span>
+      </div>
+      <div class="card-body small">
+        {% if e.hata %}<div class="text-danger mb-2"><strong>Hata:</strong> {{ e.hata }}</div>{% endif %}
+        {% for p in e.sorunlar or [] %}<div class="text-danger">✗ {{ p }}</div>{% endfor %}
+        {% for w in e.uyarilar or [] %}<div class="text-warning-emphasis">! {{ w }}</div>{% endfor %}
+        <details class="mt-2"><summary>İstem</summary><pre class="bg-light p-2 mb-0 small" style="white-space: pre-wrap">{{ e.istem }}</pre></details>
+        {% if e.ham_cikti %}<details class="mt-2"><summary>Ham çıktı</summary><pre class="bg-light p-2 mb-0 small" style="white-space: pre-wrap">{{ e.ham_cikti }}</pre></details>{% endif %}
+      </div>
+    </div>
+  {% else %}
+    <div class="text-center text-muted py-5">
+      <i class="bi bi-inbox display-5 d-block mb-2"></i>
+      Henüz kayıt yok. Yapay zekâ açıkken bir üretici "Fiyat önerisi" sayfasını açtığında kayıt oluşur.
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}

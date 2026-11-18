@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% from "_shop_macros.html" import tl %}
+{% block title %}Satış Zamanı Önerisi · {{ product.name }}{% endblock %}
+
+{% set trend_labels = {"up": ("Yükseliyor", "success", "arrow-up-right"),
+                       "down": ("Düşüyor", "danger", "arrow-down-right"),
+                       "stable": ("Yatay", "secondary", "arrow-right")} %}
+
+{% block content %}
+<div class="container py-4">
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb small">
+      <li class="breadcrumb-item"><a href="{{ url_for('producer.products') }}" class="link-farm">Ürünlerim</a></li>
+      <li class="breadcrumb-item active" aria-current="page">{{ product.name }} · fiyat önerisi</li>
+    </ol>
+  </nav>
+
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 fw-bold mb-0"><i class="bi bi-graph-up-arrow text-farm"></i> Fiyat Trendi ve Satış Zamanı</h1>
+    <span class="badge {{ 'text-bg-success' if ai_status[0] else 'text-bg-secondary' }}">{{ ai_status[1] }}</span>
+  </div>
+
+  {% if error %}
+    <div class="alert alert-warning">{{ error }}</div>
+    <a href="{{ url_for('price.index') }}" class="link-farm">Takip edilen hal fiyatlarını gör</a>
+  {% else %}
+    {% set s = result.stats %}
+    {% set a = result.advice %}
+    {% set t = trend_labels[a.trend] %}
+
+    {% for note in result.notes %}<div class="alert alert-info small py-2">{{ note }}</div>{% endfor %}
+    {% for warning in result.warnings %}<div class="alert alert-warning small py-2">{{ warning }}</div>{% endfor %}
+
+    <div class="row g-4">
+      <div class="col-lg-5">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <span class="badge fs-6 text-bg-{{ t[1] }}"><i class="bi bi-{{ t[2] }}"></i> {{ t[0] }}</span>
+              <span class="small text-muted">
+                {% if result.used_ai %}<i class="bi bi-stars"></i> Yapay zekâ önerisi{% else %}<i class="bi bi-calculator"></i> Kural tabanlı öneri{% endif %}
+              </span>
+            </div>
+            <p class="fs-5 mb-3">{{ a.recommendation }}</p>
+            <dl class="row small mb-2">
+              <dt class="col-7">7 gün sonrası tahmini</dt><dd class="col-5 text-end">{{ tl(a.predicted_price) }} / {{ result.unit }}</dd>
+              <dt class="col-7">Güven</dt>
+              <dd class="col-5 text-end">%{{ (a.confidence * 100)|round|int }}</dd>
+            </dl>
+            <div class="progress mb-3" role="progressbar" aria-label="Güven" style="height: 6px">
+              <div class="progress-bar bg-success" style="width: {{ (a.confidence * 100)|round|int }}%"></div>
+            </div>
+            {% if a.reasons %}
+              <div class="small fw-semibold mb-1">Gerekçeler</div>
+              <ul class="small mb-3">{% for reason in a.reasons %}<li>{{ reason }}</li>{% endfor %}</ul>
+            {% endif %}
+            {% if result.listing_price is not none %}
+              <div class="alert alert-light border small mb-3">
+                Açık ilanınızın fiyatı <strong>{{ tl(result.listing_price) }}</strong>, hal ortalamasının
+                <strong>%{{ "%.0f"|format(result.listing_diff_pct|abs) }} {{ "üzerinde" if result.listing_diff_pct >= 0 else "altında" }}</strong>.
+                (Doğrudan satışta hal fiyatının üzeri normaldir: aracı yok, ürün taze.)
+              </div>
+            {% endif %}
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+              <span class="small text-muted">
+                {{ result.prediction.created_at.strftime('%d.%m.%Y %H:%M') }} · {{ result.prediction.model_name }}
+                {% if result.from_cache %}· kayıtlı{% endif %}
+              </span>
+              <form method="post">
+                {{ form.csrf_token }}
+                <button class="btn btn-sm btn-outline-success"><i class="bi bi-arrow-repeat"></i> Yeniden hesapla</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-7">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <div class="d-flex justify-content-between small mb-2">
+              <span class="fw-semibold">Hal fiyatı: {{ result.market_name }} (TL/{{ result.unit }})</span>
+              <span class="text-muted">{{ s.first_date.strftime('%d.%m') }} – {{ s.last_date.strftime('%d.%m.%Y') }}</span>
+            </div>
+            <svg viewBox="0 0 600 160" class="w-100 border rounded bg-light" role="img"
+                 aria-label="{{ s.points }} günlük fiyat grafiği, en düşük {{ s.min_price }}, en yüksek {{ s.max_price }} TL">
+              <polyline points="{{ points }}" fill="none" stroke="#2e7d32" stroke-width="2.5" stroke-linejoin="round"/>
+            </svg>
+            <div class="d-flex justify-content-between small text-muted mt-1">
+              <span>En düşük {{ tl(s.min_price) }}</span><span>En yüksek {{ tl(s.max_price) }}</span>
+            </div>
+            <table class="table table-sm small mt-3 mb-0">
+              <tbody>
+                <tr><th>Son fiyat</th><td class="text-end">{{ tl(s.last_price) }}</td></tr>
+                <tr><th>Son 7 gün ort. / önceki 7 gün</th><td class="text-end">{{ tl(s.mean_last7) }} / {{ tl(s.mean_prev7) }} (%{{ "%+.1f"|format(s.change_7d_pct) }})</td></tr>
+                <tr><th>Eğim (doğrusal regresyon, son 21 gün)</th><td class="text-end">{{ "%+.2f"|format(s.slope_per_day) }} TL/gün · R² {{ "%.2f"|format(s.r2) }}</td></tr>
+                <tr><th>Oynaklık (son 14 gün)</th><td class="text-end">%{{ "%.1f"|format(s.volatility_pct) }}</td></tr>
+                <tr><th>Regresyon tahmini (7 gün)</th><td class="text-end">{{ tl(s.forecast_price) }} (%{{ "%+.1f"|format(s.forecast_change_pct) }})</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="small text-muted mt-3 mb-0">
+      <i class="bi bi-exclamation-circle"></i> Bu bir <strong>öneridir</strong>, kesin bir tahmin değildir.
+      Geçmiş hal fiyatlarına dayanır; hava, maliyet ve talep gibi etkenleri bilmez. Son karar sizindir.
+      {% if result.used_ai %}Öneri yapay zekâ (Claude) ile üretildi ve kurallarımızla doğrulandı.{% endif %}
+    </p>
+  {% endif %}
+</div>
+{% endblock %}

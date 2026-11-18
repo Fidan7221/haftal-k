@@ -16,6 +16,9 @@ psycopg[binary]>=3.2,<4.0; sys_platform == "linux"    # PostgreSQL sürücüsü
 # --- Harici API istekleri (Hafta 9) ---
 requests>=2.31,<3.0
 
+# --- Yapay zekâ bileşeni (Hafta 10): Anthropic Claude resmi Python SDK'sı ---
+anthropic>=1.17,<2.0
+
 # --- Test (Hafta 13) ---
 pytest>=8.0,<9.0
 pytest-flask>=1.3,<2.0

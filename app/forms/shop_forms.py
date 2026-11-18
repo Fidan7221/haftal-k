@@ -4,9 +4,11 @@ Formdaki doğrulama kullanıcıya hızlı geri bildirim içindir. Asıl iş kura
 servis katmanında TEKRAR kontrol edilir; çünkü form atlanabilir (ör. biri doğrudan
 POST isteği gönderebilir).
 """
+from datetime import date
+
 from flask_wtf import FlaskForm
 from wtforms import DateField, DecimalField, HiddenField, SelectField, StringField, SubmitField, TextAreaField
-from wtforms.validators import DataRequired, InputRequired, Length, NumberRange, Optional
+from wtforms.validators import DataRequired, InputRequired, Length, NumberRange, Optional, ValidationError
 
 
 class ListingForm(FlaskForm):
@@ -67,3 +69,64 @@ class ActionForm(FlaskForm):
     """İlan kapat/aç/sil ve sepetten çıkar düğmeleri: yalnızca CSRF anahtarı taşır."""
 
     submit = SubmitField("Uygula")
+
+
+# --- Hafta 9: Ödeme formu -------------------------------------------------------------
+
+def luhn_valid(number):
+    """Kart numarasının son hanesi kontrol hanesidir (Luhn algoritması).
+
+    Sağdan başlayarak her ikinci hane 2 ile çarpılır (9'dan büyükse 9 çıkarılır),
+    hepsi toplanır; toplam 10'a tam bölünüyorsa numara geçerlidir.
+    Yanlış yazılmış numarayı API'ye hiç göndermeden yakalar.
+    """
+    total = 0
+    for index, char in enumerate(reversed(number)):
+        digit = int(char)
+        if index % 2 == 1:
+            digit *= 2
+            if digit > 9:
+                digit -= 9
+        total += digit
+    return total % 10 == 0
+
+
+def _digits(text):
+    return "".join(ch for ch in (text or "") if ch.isdigit())
+
+
+class PaymentForm(FlaskForm):
+    """Kart bilgisi. Bu bilgiler veri tabanına YAZILMAZ, yalnızca ödeme servisine iletilir."""
+
+    card_holder = StringField("Kart üzerindeki ad", validators=[
+        DataRequired(message="Kart sahibinin adını yazın."), Length(min=3, max=60)])
+    card_number = StringField("Kart numarası", validators=[DataRequired(message="Kart numarasını yazın.")])
+    expiry = StringField("Son kullanma (AA/YY)", validators=[DataRequired(message="Son kullanma tarihini yazın.")])
+    cvc = StringField("CVC", validators=[DataRequired(message="CVC kodunu yazın.")])
+    submit = SubmitField("Ödemeyi Tamamla")
+
+    def validate_card_number(self, field):
+        number = _digits(field.data)
+        if not 13 <= len(number) <= 19 or not luhn_valid(number):
+            raise ValidationError("Kart numarası geçersiz.")
+
+    def validate_expiry(self, field):
+        parts = (field.data or "").replace(" ", "").split("/")
+        if len(parts) != 2 or not all(p.isdigit() for p in parts):
+            raise ValidationError("AA/YY biçiminde yazın (ör. 08/28).")
+        month, year = int(parts[0]), int(parts[1]) % 100 + 2000
+        if not 1 <= month <= 12:
+            raise ValidationError("Ay 01-12 arasında olmalı.")
+        today = date.today()
+        if (year, month) < (today.year, today.month):
+            raise ValidationError("Kartın süresi dolmuş.")
+
+    def validate_cvc(self, field):
+        if not _digits(field.data) == (field.data or "").strip() or len(_digits(field.data)) not in (3, 4):
+            raise ValidationError("CVC 3 veya 4 haneli olmalı.")
+
+    def to_card(self):
+        from app.integrations.payment_api import CardInfo
+        month, year = self.expiry.data.replace(" ", "").split("/")
+        return CardInfo(holder=self.card_holder.data.strip(), number=_digits(self.card_number.data),
+                        exp_month=int(month), exp_year=int(year) % 100 + 2000, cvc=self.cvc.data.strip())

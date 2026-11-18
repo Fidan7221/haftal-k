@@ -19,7 +19,7 @@ from app.extensions import csrf, db, login_manager, migrate
 # Hafta 8: Ara sürüm numarası (Semantic Versioning: MAJOR.MINOR.PATCH).
 # 0.x.y = henüz kararlı 1.0 değil; MINOR her yeni modülde, PATCH her hata düzeltmesinde artar.
 # Git etiketiyle (git tag v0.8.0) aynı tutulur; sayfanın alt bilgisinde görünür.
-__version__ = "0.8.3"
+__version__ = "0.10.0"
 
 
 @event.listens_for(Engine, "connect")  # her bağlantıda çalış
@@ -100,6 +100,7 @@ def register_blueprints(app):
     from app.routes.listing_routes import listing_bp
     from app.routes.cart_routes import cart_bp
     from app.routes.order_routes import order_bp
+    from app.routes.price_routes import price_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
@@ -108,6 +109,7 @@ def register_blueprints(app):
     app.register_blueprint(listing_bp)   # Hafta 7: ilanlar
     app.register_blueprint(cart_bp)      # Hafta 7: sepet ve ödeme
     app.register_blueprint(order_bp)     # Hafta 7: siparişler
+    app.register_blueprint(price_bp)     # Hafta 9-10: hal fiyatları ve satış zamanı önerisi
 
 
 def register_error_handlers(app):
@@ -142,6 +144,20 @@ def register_cli_commands(app):
         from scripts.demo_data import seed_demo as run
 
         print(run())
+
+    @app.cli.command("fetch-prices")
+    @click.option("--days", default=30, show_default=True, help="Kaç günlük fiyat çekilsin")
+    @click.option("--force", is_flag=True, help="Veri tabanında olan günleri de yeniden çek")
+    def fetch_prices(days, force):
+        """Hal fiyatlarını harici API'den (veya sahte servisten) çeker (Hafta 9)."""
+        from app.services.price_service import sync_prices
+
+        report = sync_prices(days=days, force=force)
+        print(f"Kaynak: {report['source']} | çekilen gün: {report['days']} | yeni: {report['inserted']} | "
+              f"güncellenen: {report['updated']} | zaten olan gün: {report['cached_days']} | "
+              f"atlanan hatalı satır: {report['skipped_rows']}")
+        for error in report["errors"]:
+            print("Hata:", error)
 
     @app.cli.command("create-admin")
     @click.option("--name", prompt="Ad Soyad")

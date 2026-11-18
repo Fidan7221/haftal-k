@@ -14,8 +14,8 @@
           {{ render_field(form.shipping_address, rows=3, placeholder="Mahalle, sokak, no, ilçe / il") }}
           {{ render_field(form.note, placeholder="Örn. Akşam 18:00'den sonra teslim") }}
           <div class="alert alert-light border small">
-            <i class="bi bi-info-circle"></i> Sipariş "Ödeme bekleniyor" durumunda oluşur. Ödeme sayfası Hafta 9'da
-            gerçek ödeme sistemine bağlanacak; şimdilik sipariş sayfasındaki deneme ödemesi kullanılır.
+            <i class="bi bi-info-circle"></i> Sipariş "Ödeme bekleniyor" durumunda oluşur; ardından sipariş sayfasındaki
+            <strong>Öde</strong> düğmesiyle kartla ödeme yapılır.
           </div>
           {{ form.submit(class="btn btn-farm fw-semibold px-4") }}
           <a href="{{ url_for('cart.view') }}" class="btn btn-outline-secondary">Sepete dön</a>

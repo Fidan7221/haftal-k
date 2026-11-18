@@ -5,7 +5,38 @@ Bu dosya [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) düzenine, sü
 Her sürüm bir Git etiketiyle (`git tag -a vX.Y.Z`) işaretlenir.
 
 ## [Yayımlanmadı]
-- Hafta 9: Hal fiyatı API entegrasyonu ve gerçek ödeme altyapısı (planlanan → `0.9.0`)
+- Hafta 11: Değerlendirme ve itibar modülü (planlanan → `0.11.0`)
+
+## [0.10.0] - 2026-11-18 — Hafta 10: Yapay zekâ bileşeni
+### Eklendi
+- Fiyat trendi ve satış zamanı önerisi: `/uretici/urunler/<id>/fiyat-onerisi` (Ürünlerim → 📈 düğmesi)
+- `app/ai/trend.py`: fiyat serisi analizi (doğrusal regresyon, R², oynaklık, 7 günlük tahmin) ve kural tabanlı öneri
+- `app/ai/llm_advisor.py`: istem tasarımı, Anthropic Claude çağrısı (JSON şemalı yapılandırılmış çıktı), çıktı doğrulama
+- `app/services/ai_service.py`: hatalı/boş çıktıda kural tabanlı öneriye geçiş, günlük önbellek, günde 5 yenileme sınırı
+- AI günlüğü: `instance/ai_gunlugu.jsonl` ve yönetici sayfası `/yonetici/ai-gunlugu`
+- `price_predictions` tablosu artık dolduruluyor
+- Ayarlar: `ANTHROPIC_API_KEY`, `AI_MODEL` (anahtar yoksa bileşen kapalı, uygulama çalışır)
+- Paket: `anthropic` (resmi Python SDK'sı)
+- Testler: `tests/test_ai.py` (45 test; toplam 181)
+- Belge: `docs/HAFTA10_YAPAY_ZEKA.md`
+
+## [0.9.0] - 2026-11-18 — Hafta 9: Harici API entegrasyonu
+### Eklendi
+- Ortak HTTP katmanı `app/integrations/http.py`: zaman aşımı, yeniden deneme, 429 `Retry-After`, 7 hata sınıfı
+- Hal fiyatı istemcisi (gerçek + sahte), yanıt doğrulama; `flask fetch-prices --days N`
+- Herkese açık `/hal-fiyatlari` sayfası; yönetici "Fiyatları güncelle" düğmesi (dakikada bir)
+- Ödeme istemcisi (gerçek + test modu): HMAC imza, `Idempotency-Key`, test kartları
+- Ödeme formu `/siparislerim/<id>/odeme` (Luhn ve son kullanma kontrolü; kart bilgisi saklanmaz)
+- Ödenmiş siparişin iptalinde sağlayıcıdan iade; iade başarısızsa sipariş iptal edilmez
+- Ayarlar: `USE_MOCK_APIS`, `PRICE_API_*`, `PAYMENT_API_*` (yalnızca ortam değişkeni)
+- Testler: `tests/test_api_integration.py` (38 test)
+- Belge: `docs/HAFTA9_API_ENTEGRASYONU.md`
+
+### Değişti
+- Sipariş artık durum düğmesiyle "ödendi" yapılamaz; yalnızca ödeme formuyla (sahte `_mock_payment` kaldırıldı)
+- Başarısız ödemede sipariş "ödeme bekleniyor" durumunda kalır, tekrar denenebilir
+- `render.yaml`: açılışta `flask fetch-prices --days 60`; `USE_MOCK_APIS`, `ANTHROPIC_API_KEY` değişkenleri
+- Masaüstü sürümü açılışta örnek hal fiyatlarını yükler
 
 ## [0.8.3] - 2026-11-01
 ### Değişti

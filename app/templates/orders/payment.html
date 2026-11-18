@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% from "_macros.html" import render_field %}
+{% from "_shop_macros.html" import tl %}
+{% block title %}Ödeme · Sipariş #{{ order.id }}{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 640px">
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb small">
+      <li class="breadcrumb-item"><a href="{{ url_for('order.customer_list') }}" class="link-farm">Siparişlerim</a></li>
+      <li class="breadcrumb-item"><a href="{{ url_for('order.customer_detail', order_id=order.id) }}" class="link-farm">#{{ order.id }}</a></li>
+      <li class="breadcrumb-item active" aria-current="page">Ödeme</li>
+    </ol>
+  </nav>
+
+  <h1 class="h3 fw-bold mb-3"><i class="bi bi-credit-card text-farm"></i> Ödeme</h1>
+
+  {% if test_mode %}
+    <div class="alert alert-warning small">
+      <strong><i class="bi bi-cone-striped"></i> TEST MODU:</strong> Gerçek para çekilmez. Aşağıdaki test kartlarını kullanın
+      (son kullanma: gelecekte herhangi bir tarih, CVC: herhangi 3 hane).
+      <ul class="mb-0 mt-1 font-monospace">
+        <li>4111 1111 1111 1111 — başarılı</li>
+        <li>4000 0000 0000 0002 — banka reddeder</li>
+        <li>4000 0000 0000 0119 — zaman aşımı</li>
+        <li>4000 0000 0000 0259 — servis hatası</li>
+      </ul>
+    </div>
+  {% endif %}
+
+  {% if order.payment and order.payment.status == "failed" %}
+    <div class="alert alert-danger small"><strong>Önceki deneme başarısız:</strong> {{ order.payment.error_message }}</div>
+  {% endif %}
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+      <div class="d-flex justify-content-between mb-3">
+        <span>Ödenecek tutar</span><span class="fs-5 fw-bold text-farm">{{ tl(order.total_amount) }}</span>
+      </div>
+      <form method="post" novalidate autocomplete="off">
+        {{ form.csrf_token }}
+        {{ render_field(form.card_holder, autocomplete="cc-name") }}
+        {{ render_field(form.card_number, inputmode="numeric", autocomplete="cc-number", placeholder="4111 1111 1111 1111") }}
+        <div class="row g-2">
+          <div class="col-6">{{ render_field(form.expiry, inputmode="numeric", autocomplete="cc-exp", placeholder="AA/YY") }}</div>
+          <div class="col-6">{{ render_field(form.cvc, inputmode="numeric", autocomplete="cc-csc", placeholder="123") }}</div>
+        </div>
+        <button class="btn btn-farm w-100 mt-2"><i class="bi bi-lock"></i> {{ tl(order.total_amount) }} Öde</button>
+      </form>
+      <p class="small text-muted mt-3 mb-0"><i class="bi bi-shield-check"></i> Kart bilgileriniz sitemizde saklanmaz; yalnızca ödeme kuruluşuna iletilir.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

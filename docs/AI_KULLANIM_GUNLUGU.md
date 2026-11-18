@@ -15,6 +15,8 @@ Anlamadığım kodu projeye almadım; anlamadığım yeri yapay zekâya tekrar s
 | 6 | Üretici ve ürün modülü | Ürün CRUD, görsel yükleme doğrulaması, sahiplik kontrolü, hızlı stok formu | Başka üreticinin ürün numarasını adres çubuğuna yazıp 404 aldığımı gördüm; stok için CHECK kısıtını açıkladım |
 | 7 | İlan, sepet, sipariş + canlı yayın | Sipariş durum makinesi, checkout transaction'ı, koşullu UPDATE ile stok düşme, Render dosyası | Canlıya kendim çıkardım (`git push`, Render Blueprint). İlk kurulum bölge farkı yüzünden çöktü; hata mesajını okuyup düzeltmeyi uyguladım |
 | 8 | **Entegrasyon hatalarını ayıklama ve refaktör** | Modüller arası yolları deneyen testler yazdırdım; 4 hata buldu ve düzeltti; yönetici panelini tamamladı; sürüm numarası ve CHANGELOG | Her düzeltmeyi aşağıda açıkladım. Regresyon testlerinin eski kodda **başarısız**, yeni kodda **başarılı** olduğunu gördüm (98 test geçiyor) |
+| 9 | Harici API entegrasyonu (fiyat + ödeme) | Ödeme sağlayıcılarının API belgelerindeki kavramları (idempotency anahtarı, HMAC imza, sandbox test kartları, `Retry-After`) açıkladı; ortak HTTP katmanını, istemcileri, ödeme akışını ve 38 testi yazdı | _(doldurulacak: hangi kodu nasıl denedim — ör. test kartlarıyla elle ödeme, `.env`'in git'e gitmediğini `git status` ile kontrol)_ |
+| 10 | **Yapay zekâ bileşeni** (çekirdek işlev) | Trend analizini (regresyon), istemi, JSON şemasını, çıktı doğrulama kurallarını, yedek (kural tabanlı) akışı ve 45 testi yazdı | _(doldurulacak: istemi nasıl değiştirdim/denedim, gerçek bir çıktıyı doğrulamadan geçirip geçirmediğimi nasıl kontrol ettim)_ |
 
 ---
 
@@ -45,6 +47,18 @@ Anlamadığım kodu projeye almadım; anlamadığım yeri yapay zekâya tekrar s
 
 ---
 
+## Hafta 9-10: Uygulamanın içindeki yapay zekâ (Claude API)
+
+Hafta 10'dan itibaren yapay zekâ yalnızca geliştirme aracı değil, **uygulamanın bir parçası**:
+"Fiyat Trendi ve Satış Zamanı Önerisi" bileşeni Claude API'sini çağırır.
+- **İstem:** `app/ai/llm_advisor.py` → `SYSTEM_PROMPT` ve `build_prompt()` (sürüm: `PROMPT_VERSION`)
+- **Çıktı doğrulama:** `validate_output()`; geçmeyen çıktı kullanılmaz, kural tabanlı öneri gösterilir
+- **Her çağrının kaydı:** `instance/ai_gunlugu.jsonl` (istem, ham çıktı, sorunlar, hangi önerinin kullanıldığı); yönetici sayfası `/yonetici/ai-gunlugu`
+- **Gizlilik:** Modele yalnızca ürün türü ve hal fiyatı gider; kişisel veri gitmez
+- Ayrıntı: `docs/HAFTA10_YAPAY_ZEKA.md`
+
+---
+
 ## Yapay zekâyı kullanmadığım / kendim yaptığım işler
 - Proje konusu ve modüllerin seçimi
 - Canlı yayın hesabı (Render), `git push`, Git etiketi (`git tag v0.8.0`)
@@ -53,4 +67,4 @@ Anlamadığım kodu projeye almadım; anlamadığım yeri yapay zekâya tekrar s
 
 ## Sorumlu kullanım notları
 - Gerçek kişisel veri yapay zekâya verilmedi; tüm örnek veriler uydurma (`example.com`).
-- Gizli anahtarlar (`SECRET_KEY`, `DEMO_PASSWORD`) yapay zekâyla paylaşılmadı, koda yazılmadı.
+- Gizli anahtarlar (`SECRET_KEY`, `DEMO_PASSWORD`, `ANTHROPIC_API_KEY`, ödeme anahtarları) yapay zekâyla paylaşılmadı, koda yazılmadı.
