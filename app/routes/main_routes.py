@@ -3,10 +3,11 @@
 Paneller şimdilik basit; içerikleri sonraki haftalarda dolacak.
 Bu hafta amacımız @role_required dekoratörünün çalıştığını göstermek.
 """
-from flask import Blueprint, redirect, render_template, url_for
+from flask import Blueprint, abort, current_app, redirect, render_template, url_for
 from flask_login import current_user, login_required
 
-from app.models import RoleName
+from app.extensions import db
+from app.models import ProductImage, RoleName
 from app.utils.decorators import role_required
 
 main_bp = Blueprint("main", __name__)
@@ -16,6 +17,22 @@ main_bp = Blueprint("main", __name__)
 def index():
     from app.services.listing_service import latest_listings
     return render_template("main/index.html", latest_listings=latest_listings())
+
+
+@main_bp.route("/urun-resmi/<int:image_id>")
+def product_photo(image_id):
+    """Veri tabanındaki ürün fotoğrafını tarayıcıya gönderir (v0.10.4).
+
+    Herkese açık: fotoğraflar zaten Pazar'da herkese görünüyor. Fotoğraf değişince yeni bir
+    kayıt (yeni id) oluştuğu için tarayıcı aynı adresi 1 gün önbellekte tutabilir.
+    """
+    image = db.session.get(ProductImage, image_id)
+    if image is None:
+        abort(404)
+    response = current_app.response_class(image.data, mimetype=image.content_type)
+    response.headers["Cache-Control"] = "public, max-age=86400"
+    response.headers["X-Content-Type-Options"] = "nosniff"  # tarayıcı türü tahmin etmesin
+    return response
 
 
 @main_bp.route("/panel")

@@ -66,11 +66,11 @@
 
 {# Ürün görseli ya da yer tutucu #}
 {% macro product_image(product, css_class="product-thumb") %}
-  {% if product.image_path %}
-    {# "demo/..." ile başlayan yol: git'e eklenmiş örnek görsel (static/img/demo, Hafta 8).
-       Diğerleri: üreticinin yüklediği görsel (static/uploads, git'e gönderilmez). #}
-    <img src="{{ url_for('static', filename=('img/' if product.image_path.startswith('demo/') else 'uploads/') ~ product.image_path) }}"
-         alt="{{ product.name }}" class="{{ css_class }}" loading="lazy">
+  {% set src = product_image_url(product) %}
+  {% if src %}
+    {# Adres app/__init__.py -> product_image_url: veri tabanı (db/), örnek görsel (demo/)
+       veya eski sürümde diske yüklenmiş görsel. Dosya kaybolmuşsa yer tutucu gösterilir. #}
+    <img src="{{ src }}" alt="{{ product.name }}" class="{{ css_class }}" loading="lazy">
   {% else %}
     <div class="{{ css_class }} product-thumb-empty"><i class="bi bi-image"></i></div>
   {% endif %}

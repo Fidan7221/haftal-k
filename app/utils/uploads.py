@@ -1,4 +1,8 @@
-"""Ürün görseli kaydetme ve silme (Hafta 6).
+"""Ürün görseli kaydetme ve silme (Hafta 6; v0.10.4'ten itibaren veri tabanında).
+
+Yeni yüklenen görseller veri tabanına (product_images) yazılır; ürünün image_path değeri
+"db/<id>" olur. Eski sürümde diske yazılmış "products/<uuid>.jpg" yolları da okunmaya
+devam eder (geriye dönük uyumluluk). "demo/..." yolları git'teki örnek görsellerdir.
 
 Güvenlik önlemleri:
 1. Dosya adı kullanıcıdan alınmaz; uuid ile rastgele ad verilir
@@ -8,9 +12,14 @@ Güvenlik önlemleri:
 3. Boyut sınırı config.py içindeki MAX_CONTENT_LENGTH (5 MB) ile uygulanır.
 """
 import os
-import uuid
+
+from app.extensions import db
+from app.models import ProductImage
 
 PRODUCT_SUBFOLDER = "products"
+DB_PREFIX = "db/"
+
+CONTENT_TYPES = {"png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg", "webp": "image/webp"}
 
 # Dosya türlerinin başlangıç imzaları
 _SIGNATURES = {
@@ -35,20 +44,55 @@ def is_real_image(file_storage):
     return check(head)
 
 
-def save_product_image(file_storage, upload_root):
-    """Görseli kaydeder ve veri tabanına yazılacak göreli yolu döndürür: "products/<uuid>.png" """
-    folder = os.path.join(upload_root, PRODUCT_SUBFOLDER)
-    os.makedirs(folder, exist_ok=True)
+def save_product_image(file_storage, upload_root=None):
+    """Görseli veri tabanına ekler ve ürüne yazılacak yolu döndürür: "db/<id>".
 
-    filename = f"{uuid.uuid4().hex}.{get_extension(file_storage.filename)}"
-    file_storage.save(os.path.join(folder, filename))
-    return f"{PRODUCT_SUBFOLDER}/{filename}"
+    Commit ETMEZ: ürün kaydıyla aynı işlemde (transaction) kalıcı olur; ürün kaydı başarısız
+    olursa rollback görseli de geri alır. flush() yalnızca id'yi almak için.
+    """
+    image = ProductImage(content_type=CONTENT_TYPES[get_extension(file_storage.filename)],
+                         data=file_storage.read())
+    db.session.add(image)
+    db.session.flush()
+    return f"{DB_PREFIX}{image.id}"
+
+
+def _db_image_id(relative_path):
+    if relative_path and relative_path.startswith(DB_PREFIX) and relative_path[len(DB_PREFIX):].isdigit():
+        return int(relative_path[len(DB_PREFIX):])
+    return None
+
+
+def read_product_image(relative_path, upload_root):
+    """Görselin baytlarını ve türünü döndürür: (bytes, "image/jpeg"); yoksa None.
+    Yapay zekâya fotoğraf göndermek için kullanılır (Hafta 10 fotoğraf incelemesi)."""
+    image_id = _db_image_id(relative_path)
+    if image_id is not None:
+        image = db.session.get(ProductImage, image_id)
+        return (image.data, image.content_type) if image else None
+    if not relative_path or relative_path.startswith("demo/"):
+        return None
+    full_path = os.path.join(upload_root, PRODUCT_SUBFOLDER, os.path.basename(relative_path))
+    if not os.path.isfile(full_path):
+        return None
+    with open(full_path, "rb") as file:
+        return file.read(), CONTENT_TYPES.get(get_extension(full_path), "image/jpeg")
 
 
 def delete_product_image(relative_path, upload_root):
-    """Görseli diskten siler. Yol dışarıdan değiştirilmiş olsa bile klasör dışına çıkamaz."""
+    """Görseli siler (veri tabanından ya da eski sürümde yazıldığı diskten).
+    Disk yolu dışarıdan değiştirilmiş olsa bile klasör dışına çıkamaz."""
     if not relative_path:
         return
+    image_id = _db_image_id(relative_path)
+    if image_id is not None:
+        image = db.session.get(ProductImage, image_id)
+        if image is not None:
+            db.session.delete(image)
+            db.session.commit()
+        return
+    if relative_path.startswith("demo/"):
+        return  # git'teki örnek görsel: silinmez
     safe_name = os.path.basename(relative_path)
     full_path = os.path.join(upload_root, PRODUCT_SUBFOLDER, safe_name)
     if os.path.isfile(full_path):

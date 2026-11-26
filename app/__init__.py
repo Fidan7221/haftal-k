@@ -19,7 +19,7 @@ from app.extensions import csrf, db, login_manager, migrate
 # Hafta 8: Ara sürüm numarası (Semantic Versioning: MAJOR.MINOR.PATCH).
 # 0.x.y = henüz kararlı 1.0 değil; MINOR her yeni modülde, PATCH her hata düzeltmesinde artar.
 # Git etiketiyle (git tag v0.8.0) aynı tutulur; sayfanın alt bilgisinde görünür.
-__version__ = "0.10.3"
+__version__ = "0.10.4"
 
 
 @event.listens_for(Engine, "connect")  # her bağlantıda çalış
@@ -80,6 +80,28 @@ def register_template_filters(app):
     def inject_version():
         """Her şablonda {{ app_version }} kullanılabilsin (alt bilgide gösterilir)."""
         return {"app_version": __version__}
+
+    @app.template_global()
+    def product_image_url(product):
+        """Ürün görselinin adresi; görsel yoksa None (şablon yer tutucu gösterir).
+
+        db/<id>   -> veri tabanındaki fotoğraf (v0.10.4'ten itibaren yüklenenler)
+        demo/...  -> git'teki örnek görsel (static/img/demo)
+        products/ -> eski sürümde diske yüklenen görsel; Render'da dosya silinmiş olabilir,
+                     o zaman kırık resim yerine yer tutucu gösterilir
+        """
+        from flask import url_for
+
+        path = product.image_path
+        if not path:
+            return None
+        if path.startswith("db/") and path[3:].isdigit():
+            return url_for("main.product_photo", image_id=int(path[3:]))
+        if path.startswith("demo/"):
+            return url_for("static", filename="img/" + path)
+        if os.path.isfile(os.path.join(app.config["UPLOAD_FOLDER"], path)):
+            return url_for("static", filename="uploads/" + path)
+        return None
 
     @app.template_filter("qty")
     def format_quantity(value):

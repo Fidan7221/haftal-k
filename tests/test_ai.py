@@ -7,13 +7,15 @@ yanıtı (doğru JSON, bozuk JSON, saçma fiyat, reddetme...) döndürür. Böyl
 
 Çalıştırma: python -m pytest -v tests/test_ai.py
 """
+import base64
+import io
 import json
 from datetime import date, timedelta
 from types import SimpleNamespace
 
 import pytest
 
-from app.ai import llm_advisor
+from app.ai import llm_advisor, photo_review
 from app.ai.trend import analyze, linear_regression, rule_based_advice
 from app.extensions import db
 from app.models import Category, MarketPrice, PricePrediction, Trend
@@ -372,3 +374,114 @@ def test_gemini_rate_limit_falls_back(producer_product, fake_gemini):
     fake_gemini(ApiRateLimitError("429", 429))
     result = ai_service.suggest_for_product(producer_product)
     assert not result.used_ai and any("hız sınırı" in note for note in result.notes)
+
+
+# --- Fotoğraf incelemesi (v0.10.4): yapay zekâ ürün fotoğrafına bakar -----------------------
+# Gerçek model çağrılmaz. Fotoğraf veri tabanına yüklenir, sahte Gemini/Claude cevap verir.
+
+PNG = b"\x89PNG\r\n\x1a\n" + b"\x00" * 32
+
+
+def _photo_output(**overrides):
+    data = {"shows_product": True, "detected": "Kırmızı kapya biberler, ahşap kasada",
+            "freshness": "taze", "photo_quality": 4,
+            "strengths": ["Renkler canlı"], "issues": ["Arka plan dağınık"],
+            "tips": ["Gün ışığında, sade bir arka planla çekin"],
+            "summary": "Biberler taze görünüyor; sade bir arka plan fotoğrafı daha çekici yapar."}
+    data.update(overrides)
+    return data
+
+
+@pytest.fixture
+def photo_product(app, client):
+    ai_service._photo_review_counts.clear()  # günlük sayaç bellekte; testler birbirini etkilemesin
+    register_and_login(client, "ciftci@test.com")
+    product = make_product("ciftci@test.com", name="Kapya Biber")
+    client.post(f"/uretici/urunler/{product.id}/duzenle", content_type="multipart/form-data", data={
+        "category_id": str(product.category_id), "name": "Kapya Biber", "unit": "kg",
+        "stock_quantity": "100", "description": "", "is_active": "y", "image": (io.BytesIO(PNG), "biber.png")})
+    db.session.refresh(product)
+    assert product.image_path.startswith("db/")
+    return product
+
+
+def test_photo_review_sends_image_and_shows_result(client, photo_product, fake_gemini):
+    calls = fake_gemini(_gemini_response(json.dumps(_photo_output())))
+    page = client.post(f"/uretici/urunler/{photo_product.id}/fotograf-incelemesi").get_data(as_text=True)
+    assert "Taze görünüyor" in page and "Fotoğraf kalitesi: 4/5" in page
+    assert "sade bir arka planla" in page and "Model: gemini-test" in page
+
+    body = calls[0]["body"]
+    image_part = body["contents"][0]["parts"][0]["inlineData"]       # fotoğraf isteğin içinde
+    assert image_part["mimeType"] == "image/png" and base64.b64decode(image_part["data"]) == PNG
+    assert body["systemInstruction"]["parts"][0]["text"] == photo_review.PHOTO_SYSTEM_PROMPT
+    assert body["generationConfig"]["responseSchema"] == photo_review.PHOTO_GEMINI_SCHEMA
+
+
+def test_photo_review_with_claude_sends_image_block(photo_product, app, monkeypatch):
+    app.config["AI_ENABLED"] = True
+    fake = FakeClient(text=json.dumps(_photo_output()))
+    monkeypatch.setattr(llm_advisor, "create_client", lambda config: fake)
+    review, _ = ai_service.review_product_photo(photo_product)
+    content = fake.requests[0]["messages"][0]["content"]
+    assert content[0]["type"] == "image" and content[0]["source"]["media_type"] == "image/png"
+    assert fake.requests[0]["output_config"]["format"]["schema"] == photo_review.PHOTO_SCHEMA
+    assert review.freshness == "taze"
+
+
+@pytest.mark.parametrize("overrides, problem", [
+    ({"freshness": "harika"}, "tazelik"),
+    ({"photo_quality": 9}, "1-5"),
+    ({"photo_quality": True}, "1-5"),
+    ({"shows_product": "evet"}, "true/false"),
+    ({"tips": []}, "'tips' listesi boş"),
+    ({"summary": "Bak: https://ornek.com"}, "bağlantı"),
+    ({"strengths": "renkli"}, "metin listesi"),
+])
+def test_invalid_photo_output_rejected(overrides, problem):
+    review, problems, _ = photo_review.validate_photo_output(_photo_output(**overrides))
+    assert review is None and any(problem in p for p in problems)
+
+
+def test_photo_not_showing_product_is_flagged():
+    review, problems, warnings = photo_review.validate_photo_output(
+        _photo_output(shows_product=False, freshness="taze", detected="Bir kedi"))
+    assert review is not None and not problems
+    assert review.freshness == "belirsiz"          # ürün yoksa tazelik yorumlanamaz
+    assert any("göstermiyor" in w for w in warnings)
+
+
+def test_photo_review_failure_shows_reason_and_logs(app, client, photo_product, fake_gemini, tmp_path):
+    app.config["AI_LOG_PATH"] = str(tmp_path / "ai.jsonl")
+    fake_gemini(_gemini_response("bozuk"))
+    page = client.post(f"/uretici/urunler/{photo_product.id}/fotograf-incelemesi").get_data(as_text=True)
+    assert "Fotoğraf incelemesi yapılamadı" in page and "geçerli JSON değil" in page
+    entry = ai_service.read_log()[0]
+    assert entry["tur"] == "fotograf" and entry["kullanilan"] == "kullanilmadi"
+    assert "image/png" in entry["istem"] and "iVBOR" not in entry["istem"]  # fotoğrafın kendisi günlükte yok
+
+
+def test_photo_review_needs_ai_and_photo(client, app, photo_product):
+    page = client.post(f"/uretici/urunler/{photo_product.id}/fotograf-incelemesi").get_data(as_text=True)
+    assert "yapay zekâ açık olmalı" in page            # AI kapalı (testlerde varsayılan)
+
+    app.config["AI_ENABLED"] = True
+    other = make_product("ciftci@test.com", name="Fotoğrafsız Domates")
+    page = client.post(f"/uretici/urunler/{other.id}/fotograf-incelemesi").get_data(as_text=True)
+    assert "fotoğrafı yok" in page
+
+
+def test_photo_review_daily_limit(photo_product, fake_gemini):
+    fake_gemini(*[_gemini_response(json.dumps(_photo_output()))] * ai_service.MAX_DAILY_PHOTO_REVIEWS)
+    ai_service._photo_review_counts.clear()
+    for _ in range(ai_service.MAX_DAILY_PHOTO_REVIEWS):
+        ai_service.review_product_photo(photo_product)
+    with pytest.raises(Exception, match="en fazla"):
+        ai_service.review_product_photo(photo_product)
+    ai_service._photo_review_counts.clear()
+
+
+def test_photo_review_other_producer_404(client, photo_product):
+    client.post("/auth/logout")
+    register_and_login(client, "baska@test.com", farm_name="Başka Çiftlik")
+    assert client.get(f"/uretici/urunler/{photo_product.id}/fotograf-incelemesi").status_code == 404

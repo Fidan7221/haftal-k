@@ -7,7 +7,7 @@ import os
 from decimal import Decimal
 
 from app.extensions import db
-from app.models import Category, Listing, Order, OrderItem, Product
+from app.models import Category, Listing, Order, OrderItem, Product, ProductImage
 from app.repositories.user_repository import UserRepository
 from tests.conftest import register_and_login
 
@@ -99,9 +99,18 @@ def test_create_product_with_image(client, app):
     add_product(client, image=(io.BytesIO(PNG_BYTES), "domates.png"))
 
     product = Product.query.one()
-    assert product.image_path.startswith("products/")
-    assert product.image_path != "products/domates.png"  # ad rastgele üretildi
-    assert os.path.isfile(os.path.join(app.config["UPLOAD_FOLDER"], product.image_path))
+    # v0.10.4: fotoğraf diske değil veri tabanına yazılır (Render'da disk geçici)
+    assert product.image_path.startswith("db/")
+    image = db.session.get(ProductImage, int(product.image_path[3:]))
+    assert image.data == PNG_BYTES and image.content_type == "image/png"
+    assert not os.path.isdir(os.path.join(app.config["UPLOAD_FOLDER"], "products"))  # diske yazılmadı
+
+    # Fotoğraf kendi adresinden sunulur ve ürün sayfasında o adres kullanılır
+    response = client.get(f"/urun-resmi/{image.id}")
+    assert response.status_code == 200 and response.data == PNG_BYTES
+    assert response.mimetype == "image/png"
+    assert f"/urun-resmi/{image.id}" in client.get("/uretici/urunler").get_data(as_text=True)
+    assert client.get("/urun-resmi/9999").status_code == 404
 
 
 def test_fake_image_rejected(client):
@@ -179,15 +188,15 @@ def test_replacing_image_deletes_old_file(client, app):
     register_and_login(client, "ciftci@test.com")
     add_product(client, image=(io.BytesIO(PNG_BYTES), "eski.png"))
     product = Product.query.one()
-    old_path = os.path.join(app.config["UPLOAD_FOLDER"], product.image_path)
+    old_path = product.image_path
 
     client.post(f"/uretici/urunler/{product.id}/duzenle",
                 data=product_data(image=(io.BytesIO(PNG_BYTES), "yeni.png")),
                 content_type="multipart/form-data")
 
     db.session.refresh(product)
-    assert not os.path.exists(old_path)
-    assert os.path.isfile(os.path.join(app.config["UPLOAD_FOLDER"], product.image_path))
+    assert product.image_path != old_path and product.image_path.startswith("db/")
+    assert ProductImage.query.count() == 1  # eski fotoğraf silindi, yalnızca yenisi var
 
 
 def test_cannot_edit_other_producers_product(client):
@@ -211,12 +220,23 @@ def test_delete_product_removes_row_and_image(client, app):
     register_and_login(client, "ciftci@test.com")
     add_product(client, image=(io.BytesIO(PNG_BYTES), "domates.png"))
     product = Product.query.one()
-    image_file = os.path.join(app.config["UPLOAD_FOLDER"], product.image_path)
+    assert ProductImage.query.count() == 1
 
     response = client.post(f"/uretici/urunler/{product.id}/sil", follow_redirects=True)
     assert "silindi" in response.get_data(as_text=True)
     assert Product.query.count() == 0
-    assert not os.path.exists(image_file)
+    assert ProductImage.query.count() == 0
+
+
+def test_lost_old_disk_image_shows_placeholder(client, app):
+    """Eski sürümde diske yüklenmiş ama Render'da silinmiş fotoğraf: kırık resim yerine yer tutucu."""
+    register_and_login(client, "ciftci@test.com")
+    add_product(client)
+    product = Product.query.one()
+    product.image_path = "products/kayboldu.jpg"
+    db.session.commit()
+    html = client.get("/uretici/urunler").get_data(as_text=True)
+    assert "kayboldu.jpg" not in html and "product-thumb-empty" in html
 
 
 def test_delete_requires_post(client):

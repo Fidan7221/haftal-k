@@ -102,6 +102,10 @@ def run_migrations_online():
         # migration sırasında denetim geçici olarak kapatılır (Alembic belgelerinin önerisi).
         if connection.dialect.name == "sqlite":
             connection.exec_driver_sql("PRAGMA foreign_keys=OFF")
+            # v0.10.4 düzeltmesi: SQLAlchemy 2 yukarıdaki komutla kendiliğinden bir işlem
+            # (transaction) başlatır. Kapatılmazsa Alembic aşağıda "zaten açık işlem var" sanıp
+            # COMMIT etmez ve bağlantı kapanınca son migration'lar geri alınır (yalnızca SQLite).
+            connection.commit()
         context.configure(
             connection=connection,
             target_metadata=get_metadata(),

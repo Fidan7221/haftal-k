@@ -6,7 +6,7 @@ Başka bir dosyada şöyle kullanılır:
 from app.models.base import BaseModel
 from app.models.user import Role, RoleName, User
 from app.models.producer import ProducerProfile
-from app.models.product import Category, Product, Unit
+from app.models.product import Category, Product, ProductImage, Unit
 from app.models.listing import Listing, ListingStatus
 from app.models.cart import Cart, CartItem
 from app.models.order import Order, OrderItem, OrderStatus
@@ -19,7 +19,7 @@ __all__ = [
     "BaseModel",
     "Role", "RoleName", "User",
     "ProducerProfile",
-    "Category", "Product", "Unit",
+    "Category", "Product", "ProductImage", "Unit",
     "Listing", "ListingStatus",
     "Cart", "CartItem",
     "Order", "OrderItem", "OrderStatus",

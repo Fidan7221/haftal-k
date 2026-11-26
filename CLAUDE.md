@@ -4,7 +4,7 @@
 dersinin haftalık projesi. Kod, yorumlar, belgeler ve kullanıcı arayüzü **Türkçe**; yeni kod da
 Türkçe yorumlu ve öğrencinin sözlü sınavda anlatabileceği sadelikte olmalı.
 
-- Sürüm: `0.10.3` (`app/__init__.py` → `__version__`; CHANGELOG ile aynı tutulur)
+- Sürüm: `0.10.4` (`app/__init__.py` → `__version__`; CHANGELOG ile aynı tutulur)
 - Teknoloji: Python 3 + Flask, SQLAlchemy, SQLite (yerel) / PostgreSQL (Render), Bootstrap 5, pytest
 - Haftalık ders planı README'deki "Haftalara göre durum" tablosunda. Sıradaki: **Hafta 11 — Değerlendirme ve İtibar Modülü**
 
@@ -12,7 +12,7 @@ Türkçe yorumlu ve öğrencinin sözlü sınavda anlatabileceği sadelikte olma
 
 ```
 python run.py                     # http://127.0.0.1:5000
-python -m pytest                  # 189 test, ~3 dk
+python -m pytest                  # 204 test, ~3 dk
 flask db upgrade                  # migration'lar migrations_flask/ içinde (migrations/ Hafta 4 Node.js'e ait)
 flask seed-db / seed-demo / create-admin
 flask remove-demo-listings        # demo ilanlarını Pazar'dan kaldırır (Render açılışında çalışır)
@@ -79,6 +79,17 @@ python build_exe.py               # masaüstü .exe (masaustu.py)
 - Modele kişisel veri gönderilmez (yalnızca ürün türü ve hal fiyatları).
 - Sayfalar: üretici `/uretici/urunler/<id>/fiyat-onerisi` (Ürünlerim'deki 📈 düğmesi), yönetici `/yonetici/ai-gunlugu`.
 - Testlerde `llm_advisor.create_client` sahte istemciyle değiştirilir (monkeypatch).
+
+## v0.10.4 — Fotoğraf saklama ve fotoğraf incelemesi
+
+- Ürün fotoğrafları veri tabanında: `ProductImage` (`product_images`, `data` deferred). Ürün `image_path = "db/<id>"`;
+  `app/utils/uploads.py` kaydet/oku/sil, `/urun-resmi/<id>` sunar, şablonda `product_image_url()` global'i.
+  `demo/...` (git'teki örnek) ve eski `products/...` disk yolları da çalışır; kaybolmuş disk dosyası → yer tutucu.
+  Sebep: Render ücretsiz planında disk geçici (güncellemede ve 15 dk boşta kalıp uyanınca silinir).
+- Fotoğraf incelemesi: `app/ai/photo_review.py` (istem, şema, `validate_photo_output`) + `ai_service.review_product_photo`;
+  `llm_advisor.call_model(..., system, schema, gemini_schema, image)` fotoğrafı Gemini'ye `inlineData`, Claude'a `image`
+  bloğu olarak gönderir. Kural tabanlı yedek YOK. Günlük sınır (5) bellekte. Fotoğraf günlüğe yazılmaz.
+- `migrations_flask/env.py`: SQLite PRAGMA'dan sonra `connection.commit()` (yoksa yerel upgrade geri alınıyordu).
 
 ## Bilinen açık noktalar
 

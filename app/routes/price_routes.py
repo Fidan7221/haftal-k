@@ -2,6 +2,7 @@
 
 /hal-fiyatlari                              Herkese açık: son hal fiyatları ve haftalık değişim
 /uretici/urunler/<id>/fiyat-onerisi         Üretici: ürünü için trend + satış zamanı önerisi
+/uretici/urunler/<id>/fotograf-incelemesi   Üretici: yapay zekâ ürün fotoğrafına bakıp öneri verir (v0.10.4)
 """
 from flask import Blueprint, abort, flash, redirect, render_template, url_for
 from flask_login import current_user
@@ -55,3 +56,20 @@ def suggestion(product_id):
     return render_template("prices/suggestion.html", product=product, result=result, error=None,
                            form=form, ai_status=ai_service.ai_status(),
                            points=ai_service.chart_points(result.series))
+
+
+@price_bp.route("/uretici/urunler/<int:product_id>/fotograf-incelemesi", methods=["GET", "POST"])
+@role_required(RoleName.PRODUCER)
+def photo_review(product_id):
+    """GET: fotoğraf ve "İncele" düğmesi. POST: yapay zekâ incelemesi (sonuç saklanmaz, sayfada gösterilir)."""
+    product = _owned_product_or_404(product_id)
+    form = ActionForm()
+    review, warnings = None, []
+    if form.validate_on_submit():
+        try:
+            review, warnings = ai_service.review_product_photo(product)
+        except ServiceError as error:
+            flash(error.message, "warning")
+    return render_template("prices/photo_review.html", product=product, form=form, review=review,
+                           warnings=warnings, has_photo=ai_service.has_photo(product),
+                           ai_status=ai_service.ai_status())

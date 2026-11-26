@@ -1,7 +1,7 @@
 # Hafta 10 — Yapay Zekâ Bileşeni: Fiyat Trendi ve Satış Zamanı Önerisi
 
 **Amaç:** Geçmiş hal fiyatı verisinden trend ve satış zamanı önerisi üreten bileşeni kurmak.
-**Sürüm:** `v0.10.2` · **Testler:** `tests/test_ai.py`
+**Sürüm:** `v0.10.4` · **Testler:** `tests/test_ai.py`
 **Model (iki sağlayıcı, `AI_PROVIDER`):**
 - **Google Gemini** (`gemini-3.8-flash`) — **ücretsiz katman**, anahtar `GEMINI_API_KEY`. Ek paket yok; Hafta 9'daki HTTP katmanıyla REST çağrısı.
 - **Anthropic Claude** (`claude-opus-5-5`) — ücretli, anahtar `ANTHROPIC_API_KEY`, resmi `anthropic` Python SDK'sı.
@@ -101,6 +101,24 @@ flask fetch-prices --days 60
 python run.py     # üretici olarak giriş → Ürünlerim → 📈 düğmesi
 python -m pytest tests/test_ai.py -v
 ```
+
+## 7.1 Ek: Fotoğraf incelemesi (v0.10.4)
+
+Üretici **Ürünlerim → 📷** ile ürün fotoğrafını yapay zekâya inceletebilir. Yapay zekâ fotoğrafa bakıp şunları verir:
+fotoğraf bu ürünü gösteriyor mu, ürün ne kadar taze görünüyor (taze / orta / bayat / belirsiz), fotoğraf ilan için
+ne kadar iyi (1-5), güçlü yanlar, dikkat edilecekler ve satış için öneriler.
+
+- **Aynı üç adım:** istem (`PHOTO_SYSTEM_PROMPT`, `build_photo_prompt`), çağrı (`call_model(..., image=...)`:
+  Gemini'ye `inlineData`, Claude'a `image` bloğu, base64), doğrulama (`validate_photo_output`). Dosya: `app/ai/photo_review.py`.
+- **İstemdeki sınırlar:** Yalnızca fotoğrafta görüneni söyle; tat, organiklik, ilaç kullanımı, menşe gibi fotoğraftan
+  anlaşılamayacak şeyleri iddia etme; emin değilsen tazelik "belirsiz"; fotoğraftaki kişiyi yorumlama.
+- **Doğrulama:** tazelik listede mi, kalite 1-5 tam sayı mı, evet/hayır alanı gerçekten true/false mı, öneri listesi boş mu,
+  metinlerde bağlantı veya etiket var mı. Ürün fotoğrafta yoksa tazelik "belirsiz"e çevrilir ve uyarı gösterilir.
+- **Fiyat önerisinden farkı:** fotoğrafı yapay zekâsız yorumlayamayız, bu yüzden **kural tabanlı yedek yok**; hata olursa
+  nedeni ekranda ve AI günlüğünde yazar. Sonuç saklanmaz; inceleme yalnızca düğmeye basınca yapılır (günde 5 kez).
+- **Gizlilik:** Fotoğraf yalnızca inceleme için servise gönderilir, AI günlüğüne fotoğrafın kendisi değil türü ve boyutu yazılır.
+- **Ön koşul:** Fotoğraflar artık veri tabanında saklanıyor (`product_images`). Render'ın ücretsiz planında disk geçici
+  olduğu için daha önce yüklenen fotoğraflar her güncellemede siliniyordu.
 
 ## 8. Sözlü sınav soruları — cevaplarım
 

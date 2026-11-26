@@ -7,6 +7,24 @@ Her sürüm bir Git etiketiyle (`git tag -a vX.Y.Z`) işaretlenir.
 ## [Yayımlanmadı]
 - Hafta 11: Değerlendirme ve itibar modülü (planlanan → `0.11.0`)
 
+## [0.10.4] - 2026-11-27
+### Eklendi
+- **Fotoğraf incelemesi:** yapay zekâ (Gemini veya Claude) ürün fotoğrafına bakar; fotoğrafın ürünü
+  gösterip göstermediğini, görünen tazeliği, fotoğraf kalitesini (1-5) ve ilan için önerileri verir.
+  `/uretici/urunler/<id>/fotograf-incelemesi` (Ürünlerim → 📷). Çıktı `validate_photo_output` ile doğrulanır;
+  kural tabanlı yedek yok, sorun olursa nedeni gösterilir. Günde ürün başına en fazla 5 inceleme
+- Testler: fotoğraf incelemesi ve fotoğraf saklama (toplam 204)
+
+### Değişti
+- Ürün fotoğrafları diskte değil **veri tabanında** (`product_images` tablosu, migration `a7d3e9f1b204`).
+  Render'ın ücretsiz planında disk geçici olduğu için yüklenen fotoğraflar her güncellemede ve uyandırmada
+  siliniyordu. Fotoğraf `/urun-resmi/<id>` adresinden sunulur
+- Eski sürümde diske yüklenmiş ama silinmiş fotoğraflar için kırık resim yerine yer tutucu gösterilir
+
+### Düzeltildi
+- `migrations_flask/env.py`: yerel SQLite'ta `flask db upgrade` son migration'ları kaydetmiyordu
+  (PRAGMA komutu SQLAlchemy 2'de işlem başlatıyor, Alembic commit etmiyordu). PostgreSQL etkilenmiyordu
+
 ## [0.10.3] - 2026-11-26
 ### Düzeltildi
 - Canlıda öneri sayfası 503 veriyordu: gunicorn isteği 30 sn'de kesiyordu, yapay zekâ çağrısı

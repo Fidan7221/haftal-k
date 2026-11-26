@@ -69,7 +69,7 @@
 **Söyle:** "Bu ekran entegrasyonun özeti: her sayı başka bir modülün tablosundan geliyor. Kullanıcılar Hafta 5'ten, ürünler Hafta 6'dan, ilan ve sipariş Hafta 7'den."
 
 ## Adım 8 — Testler ve sürüm (45 sn) — VS Code
-1. Terminal: `python -m pytest` → **189 passed** (Hafta 8'de 98'di).
+1. Terminal: `python -m pytest` → **204 passed** (Hafta 8'de 98'di).
 2. `tests/test_integration.py` → `test_end_to_end_happy_path`: "Az önce gösterdiğim senaryonun otomatik hâli."
 3. `git tag` → `v0.8.0` … `v0.8.3`; `CHANGELOG.md` → ilgili bölümler.
 

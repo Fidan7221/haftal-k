@@ -78,3 +78,20 @@ class Product(BaseModel):
 
     def __repr__(self):
         return f"<Product {self.name}>"
+
+
+class ProductImage(BaseModel):
+    """Üreticinin yüklediği ürün fotoğrafı, veri tabanında (product_images tablosu).
+
+    Neden diskte değil? Render'ın ücretsiz planında sunucunun diski geçicidir: her güncellemede
+    ve site 15 dakika boşta kalıp yeniden uyandığında yüklenen dosyalar silinir. Veri tabanı
+    (PostgreSQL) kalıcıdır. Ürün bu kayda image_path = "db/<id>" ile bağlanır.
+
+    data "deferred": ürün listelenirken fotoğrafın baytları belleğe YÜKLENMEZ; yalnızca
+    fotoğraf istenince (/urun-resmi/<id>) okunur.
+    """
+
+    __tablename__ = "product_images"
+
+    content_type = db.Column(db.String(30), nullable=False)   # image/jpeg, image/png, image/webp
+    data = db.deferred(db.Column(db.LargeBinary, nullable=False))

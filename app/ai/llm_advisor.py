@@ -18,6 +18,7 @@ Anahtarlar yalnızca ortam değişkeninde; kodda yok. İstem ve doğrulama iki s
 
 Modele kişisel veri GÖNDERİLMEZ: yalnızca ürün türü, birim ve hal fiyatları.
 """
+import base64
 import json
 
 from app.ai.trend import FORECAST_DAYS, TREND_THRESHOLD_PCT, Advice
@@ -91,11 +92,16 @@ def create_client(config):
     return anthropic.Anthropic(timeout=config.get("AI_TIMEOUT", 30), max_retries=1)
 
 
-def call_model(config, user_prompt):
-    """Modeli çağırır. Dönüş: (ham_metin, model_adı). Hata: LlmError."""
+def call_model(config, user_prompt, system=None, schema=None, gemini_schema=None, image=None):
+    """Modeli çağırır. Dönüş: (ham_metin, model_adı). Hata: LlmError.
+
+    Varsayılan: fiyat önerisi (SYSTEM_PROMPT + OUTPUT_SCHEMA). Fotoğraf incelemesi kendi istemini,
+    şemasını ve image=(baytlar, "image/jpeg") değerini verir (app/ai/photo_review.py).
+    """
+    system = system or SYSTEM_PROMPT
     if config.get("AI_PROVIDER") == "gemini":
-        return call_gemini(config, user_prompt)
-    return call_anthropic(config, user_prompt)
+        return call_gemini(config, user_prompt, system, gemini_schema or GEMINI_SCHEMA, image)
+    return call_anthropic(config, user_prompt, system, schema or OUTPUT_SCHEMA, image)
 
 
 # --- Google Gemini (ücretsiz katman) ----------------------------------------------------
@@ -124,7 +130,7 @@ def gemini_request(url, headers, body, timeout):
     return request_json("POST", url, timeout=timeout, max_retries=1, headers=headers, json_body=body)
 
 
-def call_gemini(config, user_prompt):
+def call_gemini(config, user_prompt, system=None, schema=None, image=None):
     import os
 
     from app.integrations import http as http_layer
@@ -135,12 +141,17 @@ def call_gemini(config, user_prompt):
     model = config.get("AI_MODEL") or "gemini-3.8-flash"
     url = GEMINI_URL.format(model=model)
     headers = {"x-goog-api-key": key, "Content-Type": "application/json"}  # anahtar adreste değil, başlıkta
+    parts = [{"text": user_prompt}]
+    if image is not None:
+        # Fotoğraf isteğin içinde base64 metin olarak gider (inlineData); önce resim, sonra soru
+        data, mime = image
+        parts.insert(0, {"inlineData": {"mimeType": mime, "data": base64.b64encode(data).decode()}})
     body = {
-        "systemInstruction": {"parts": [{"text": SYSTEM_PROMPT}]},
-        "contents": [{"role": "user", "parts": [{"text": user_prompt}]}],
+        "systemInstruction": {"parts": [{"text": system or SYSTEM_PROMPT}]},
+        "contents": [{"role": "user", "parts": parts}],
         "generationConfig": {
             "responseMimeType": "application/json",   # yanıt JSON olmak zorunda
-            "responseSchema": GEMINI_SCHEMA,
+            "responseSchema": schema or GEMINI_SCHEMA,
             "temperature": 0.2,                       # yorum tutarlı olsun, yaratıcılık gerekmez
             # Gemini 3 modelleri cevaptan önce "düşünür" ve düşünme de maxOutputTokens'tan düşer.
             # Varsayılan (medium) düşünme sınırı doldurup cevabı yarıda kesebiliyor (MAX_TOKENS)
@@ -194,7 +205,7 @@ def call_gemini(config, user_prompt):
 
 # --- Anthropic Claude (ücretli) --------------------------------------------------------
 
-def call_anthropic(config, user_prompt):
+def call_anthropic(config, user_prompt, system=None, schema=None, image=None):
     try:
         import anthropic
     except ImportError:
@@ -206,12 +217,12 @@ def call_anthropic(config, user_prompt):
         response = client.beta.messages.create(
             model=model,
             max_tokens=4000,
-            system=SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": user_prompt}],
+            system=system or SYSTEM_PROMPT,
+            messages=[{"role": "user", "content": _anthropic_content(user_prompt, image)}],
             # Basit bir yorum görevi: düşük "effort" yeterli, daha hızlı ve ucuz
             # format: yanıt OUTPUT_SCHEMA'ya uyan JSON olmak ZORUNDA
             output_config={"effort": "low",
-                           "format": {"type": "json_schema", "schema": OUTPUT_SCHEMA}},
+                           "format": {"type": "json_schema", "schema": schema or OUTPUT_SCHEMA}},
             # Model güvenlik nedeniyle reddederse (refusal) sunucu uygun bir yedek modelle dener
             betas=["server-side-fallback-2026-07-01"],
             fallbacks="default",
@@ -235,6 +246,15 @@ def call_anthropic(config, user_prompt):
     if not text.strip():
         raise LlmError("Model boş yanıt döndürdü.")
     return text, getattr(response, "model", None) or model
+
+
+def _anthropic_content(user_prompt, image):
+    if image is None:
+        return user_prompt
+    data, mime = image
+    return [{"type": "image", "source": {"type": "base64", "media_type": mime,
+                                         "data": base64.b64encode(data).decode()}},
+            {"type": "text", "text": user_prompt}]
 
 
 def parse_output(raw_text):
