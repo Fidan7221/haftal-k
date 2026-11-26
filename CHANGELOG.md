@@ -7,6 +7,12 @@ Her sürüm bir Git etiketiyle (`git tag -a vX.Y.Z`) işaretlenir.
 ## [Yayımlanmadı]
 - Hafta 11: Değerlendirme ve itibar modülü (planlanan → `0.11.0`)
 
+## [0.10.8] - 2026-11-27
+### Değişti
+- Canlı veri tabanı Render'dan **Neon**'a (neon.tech, ücretsiz, süresi dolmaz) taşındı. Render'ın ücretsiz
+  PostgreSQL'i 1 Aralık 2026'da silinecekti. Tüm tablolar kopyalandı, satır sayıları ve fotoğrafların
+  içeriği birebir doğrulandı. `render.yaml`: Render veri tabanı kaldırıldı, `DATABASE_URL` panelden girilir
+
 ## [0.10.7] - 2026-11-27
 ### Düzeltildi
 - Yapay zekânın gerekçeleri "Yeniden hesapla" sonrası görünmüyordu (kayıtlı öneride gerekçe alanı yoktu).

@@ -4,8 +4,8 @@
 dersinin haftalık projesi. Kod, yorumlar, belgeler ve kullanıcı arayüzü **Türkçe**; yeni kod da
 Türkçe yorumlu ve öğrencinin sözlü sınavda anlatabileceği sadelikte olmalı.
 
-- Sürüm: `0.10.7` (`app/__init__.py` → `__version__`; CHANGELOG ile aynı tutulur)
-- Teknoloji: Python 3 + Flask, SQLAlchemy, SQLite (yerel) / PostgreSQL (Render), Bootstrap 5, pytest
+- Sürüm: `0.10.8` (`app/__init__.py` → `__version__`; CHANGELOG ile aynı tutulur)
+- Teknoloji: Python 3 + Flask, SQLAlchemy, SQLite (yerel) / PostgreSQL (Neon; web servisi Render'da), Bootstrap 5, pytest
 - Haftalık ders planı README'deki "Haftalara göre durum" tablosunda. Sıradaki: **Hafta 11 — Değerlendirme ve İtibar Modülü**
 
 ## Komutlar
@@ -90,6 +90,13 @@ python build_exe.py               # masaüstü .exe (masaustu.py)
 - `migrations_flask/env.py`: SQLite PRAGMA'dan sonra `connection.commit()` (yoksa yerel upgrade geri alınıyordu).
 - Yapay zekâ **fotoğraf incelemesi** 0.10.4'te eklendi, öğrencinin isteğiyle 0.10.5'te KALDIRILDI; geri ekleme.
   Yapay zekâ ile ürün görseli üretme de istenmedi (Gemini'de ücretsiz değil, alıcıyı yanıltabilir).
+
+## v0.10.8 — Veri tabanı Neon'da
+
+- Render'ın ücretsiz PostgreSQL'i 30 günde siliniyordu (1 Aralık 2026). Veriler Neon'a (neon.tech, ücretsiz,
+  süresi dolmaz, AWS US East 2) kopyalandı; eski Render veri tabanına dokunulmadı. `render.yaml`'da artık
+  veri tabanı yok; `DATABASE_URL` Render panelinde (sync: false). Neon adresinde `-pooler` YOK (doğrudan bağlantı).
+- Taşıma bir kerelikti (geçici betik, repoda değil). `tasima.env` (.gitignore'da) parola içerir; iş bitince silinmeli.
 
 ## Bilinen açık noktalar
 

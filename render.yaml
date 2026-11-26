@@ -1,20 +1,15 @@
 # Render "Blueprint" dosyası (Hafta 7 - Canlı yayın)
-# Render bu dosyayı okuyup web servisini ve PostgreSQL veri tabanını TEK TIKLA kurar.
-# Anlatım: docs/CANLI_YAYIN.md
-
-databases:
-  - name: tarladan-sofraya-db
-    plan: free                 # Ücretsiz PostgreSQL (Render'da 30 gün sonra süresi dolar)
-    databaseName: tarladan_sofraya
-    user: tarladan
+# Render bu dosyayı okuyup web servisini kurar. Anlatım: docs/CANLI_YAYIN.md
+#
+# v0.10.8: Veri tabanı artık Render'da DEĞİL, Neon'da (neon.tech, ücretsiz, süresi dolmaz).
+# Render'ın ücretsiz PostgreSQL'i 30 gün sonra siliniyordu (1 Aralık 2026). Veriler Neon'a
+# taşındı; adres Render panelinde DATABASE_URL olarak girilir (aşağıda sync: false).
 
 services:
   - type: web
     name: tarladan-sofraya
     runtime: python
     plan: free
-    # Bölge yazılmadı: web servisi ve veri tabanı AYNI bölgede (varsayılan Oregon) olmalı.
-    # Farklı bölgedeyse iç adres (dpg-...) çözülemez: "failed to resolve host" hatası.
     buildCommand: pip install -r requirements.txt
     # Her açılışta: 1) tabloları migration ile güncelle  2) roller/kategoriler
     #               3) demo verisi (yalnızca ilk sefer)    4) demo ilanlarını Pazar'dan kaldır
@@ -31,9 +26,7 @@ services:
       - key: SECRET_KEY
         generateValue: true    # Render uzun rastgele bir anahtar üretir; kimse görmez
       - key: DATABASE_URL
-        fromDatabase:          # Veri tabanı adresi otomatik bağlanır (parolayı kodda tutmayız)
-          name: tarladan-sofraya-db
-          property: connectionString
+        sync: false            # Neon bağlantı adresi (postgresql://...neon.tech/...); panelde girilir, koda yazılmaz
       - key: DEMO_PASSWORD
         sync: false            # Render kurulumda bu değeri SİZE sorar (koda yazılmaz)
       # --- Hafta 9-10 ---

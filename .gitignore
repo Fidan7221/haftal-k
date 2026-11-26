@@ -36,3 +36,6 @@ build/
 dist/
 *.spec
 exe_dosyalari.zip
+
+# Veri tabanı taşıma dosyası (parolalar içerir)
+tasima.env
