@@ -142,7 +142,11 @@ def call_gemini(config, user_prompt):
             "responseMimeType": "application/json",   # yanıt JSON olmak zorunda
             "responseSchema": GEMINI_SCHEMA,
             "temperature": 0.2,                       # yorum tutarlı olsun, yaratıcılık gerekmez
-            "maxOutputTokens": 4096,
+            # Gemini 3 modelleri cevaptan önce "düşünür" ve düşünme de maxOutputTokens'tan düşer.
+            # Varsayılan (medium) düşünme sınırı doldurup cevabı yarıda kesebiliyor (MAX_TOKENS)
+            # ve yanıtı yavaşlatıyor. Bu basit yorum görevi için "low" yeterli.
+            "thinkingConfig": {"thinkingLevel": "low"},
+            "maxOutputTokens": 8192,
         },
     }
     timeout = config.get("AI_TIMEOUT", 30)
@@ -150,9 +154,10 @@ def call_gemini(config, user_prompt):
         try:
             data = gemini_request(url, headers, body, timeout)
         except http_layer.ApiClientError:
-            # Bazı modeller şemayı desteklemeyebilir: şemasız (yalnızca JSON) bir kez daha dene.
-            # Biçimi zaten validate_output kontrol ediyor.
+            # Bazı modeller şemayı veya düşünme ayarını desteklemeyebilir: ikisi olmadan
+            # (yalnızca JSON) bir kez daha dene. Biçimi zaten validate_output kontrol ediyor.
             body["generationConfig"].pop("responseSchema")
+            body["generationConfig"].pop("thinkingConfig")
             data = gemini_request(url, headers, body, timeout)
     except http_layer.ApiTimeoutError:
         raise LlmError("Yapay zekâ servisi zamanında yanıt vermedi (zaman aşımı).") from None

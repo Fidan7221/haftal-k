@@ -134,6 +134,9 @@ def _ask_ai(config, product, market, unit, series, stats, baseline):
         advice, problems = None, [str(error)]
 
     if advice is None:
+        # Render'ın "Logs" ekranında da görünsün (AI günlüğü dosyası her kurulumda silinir)
+        log.warning("Yapay zekâ çıktısı kullanılmadı (ürün #%s, %s): %s",
+                    product.id, entry.get("model"), "; ".join(problems))
         notes.append("Yapay zekâ çıktısı kullanılmadı, kural tabanlı öneri gösteriliyor: " + "; ".join(problems))
         entry["kullanilan"] = "kural_tabanli"
         _write_log(config, entry)

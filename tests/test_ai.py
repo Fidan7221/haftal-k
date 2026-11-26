@@ -339,6 +339,8 @@ def test_gemini_output_is_used(producer_product, fake_gemini):
     assert call["headers"]["x-goog-api-key"] == "test-anahtari"    # anahtar başlıkta
     assert "test-anahtari" not in call["url"]                       # adreste değil
     assert call["body"]["generationConfig"]["responseMimeType"] == "application/json"
+    # Düşünme "low": düşünme token'ları cevabı yarıda kesmesin (MAX_TOKENS), yanıt hızlı gelsin
+    assert call["body"]["generationConfig"]["thinkingConfig"] == {"thinkingLevel": "low"}
     assert call["body"]["systemInstruction"]["parts"][0]["text"] == llm_advisor.SYSTEM_PROMPT
 
 
@@ -349,6 +351,7 @@ def test_gemini_retries_without_schema_on_400(producer_product, fake_gemini):
     result = ai_service.suggest_for_product(producer_product)
     assert result.used_ai and len(calls) == 2
     assert "responseSchema" not in calls[1]["body"]["generationConfig"]
+    assert "thinkingConfig" not in calls[1]["body"]["generationConfig"]
 
 
 @pytest.mark.parametrize("response, reason", [

@@ -7,6 +7,15 @@ Her sürüm bir Git etiketiyle (`git tag -a vX.Y.Z`) işaretlenir.
 ## [Yayımlanmadı]
 - Hafta 11: Değerlendirme ve itibar modülü (planlanan → `0.11.0`)
 
+## [0.10.3] - 2026-11-26
+### Düzeltildi
+- Canlıda öneri sayfası 503 veriyordu: gunicorn isteği 30 sn'de kesiyordu, yapay zekâ çağrısı
+  (30 sn zaman aşımı + bir yeniden deneme) bundan uzun sürebiliyordu. `gunicorn.conf.py`: `timeout = 120`
+- Gemini yanıtı kural tabanlıya düşüyordu: Gemini 3'ün "düşünme" adımı `maxOutputTokens`'tan düşüyor,
+  cevap yarıda kalabiliyordu. `thinkingConfig.thinkingLevel = "low"`, `maxOutputTokens` 8192;
+  model bu ayarı reddederse (400) ayarsız tekrar denenir
+- Yapay zekâ çıktısı kullanılmadığında nedeni Render günlüğüne (Logs) de yazılıyor
+
 ## [0.10.2] - 2026-11-26
 ### Eklendi
 - Ücretsiz yapay zekâ seçeneği: Google Gemini (ücretsiz katman). `.env` içine yalnızca

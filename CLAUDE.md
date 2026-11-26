@@ -4,7 +4,7 @@
 dersinin haftalık projesi. Kod, yorumlar, belgeler ve kullanıcı arayüzü **Türkçe**; yeni kod da
 Türkçe yorumlu ve öğrencinin sözlü sınavda anlatabileceği sadelikte olmalı.
 
-- Sürüm: `0.10.2` (`app/__init__.py` → `__version__`; CHANGELOG ile aynı tutulur)
+- Sürüm: `0.10.3` (`app/__init__.py` → `__version__`; CHANGELOG ile aynı tutulur)
 - Teknoloji: Python 3 + Flask, SQLAlchemy, SQLite (yerel) / PostgreSQL (Render), Bootstrap 5, pytest
 - Haftalık ders planı README'deki "Haftalara göre durum" tablosunda. Sıradaki: **Hafta 11 — Değerlendirme ve İtibar Modülü**
 
@@ -64,6 +64,8 @@ python build_exe.py               # masaüstü .exe (masaustu.py)
     `request_json` ile; şema reddedilirse (400) şemasız bir kez daha dener. Testlerde `gemini_request` monkeypatch'lenir.
   - **Anthropic Claude** `claude-opus-5-5` (ücretli, `ANTHROPIC_API_KEY`): `call_anthropic`, resmi `anthropic` SDK'sı (1.17).
   - Anahtar yoksa bileşen kapalı ve kural tabanlı öneri kullanılır. `TestingConfig` sağlayıcıyı anthropic'e sabitler.
+  - Gemini'de `thinkingLevel: low` (düşünme maxOutputTokens'tan düşer). Canlıda gunicorn `timeout = 120` (`gunicorn.conf.py`);
+    30 sn'lik varsayılan, yapay zekâ çağrısını kesip 503 veriyordu.
 - `app/ai/trend.py` (yapay zekâsız): son 21 güne doğrusal regresyon, R², oynaklık, 7 gün tahmini;
   ±%3 eşiğiyle up/down/stable; `rule_based_advice` yedek ve karşılaştırma ölçüsü.
 - `app/ai/llm_advisor.py`: sabit `SYSTEM_PROMPT` + `build_prompt` (seri + hesaplanan göstergeler),
