@@ -372,3 +372,13 @@ def test_gemini_rate_limit_falls_back(producer_product, fake_gemini):
     fake_gemini(ApiRateLimitError("429", 429))
     result = ai_service.suggest_for_product(producer_product)
     assert not result.used_ai and any("hız sınırı" in note for note in result.notes)
+
+
+def test_ai_reasons_shown_after_refresh(client, producer_product, fake_ai):
+    """v0.10.7: "Yeniden hesapla" sonrası sayfa kayıttan açılır; yapay zekânın gerekçeleri de görünmeli."""
+    fake_ai(text=_matching_output(producer_product))
+    page = client.post(f"/uretici/urunler/{producer_product.id}/fiyat-onerisi",
+                       follow_redirects=True).get_data(as_text=True)
+    assert "Yapay zekâ önerisi" in page and "kayıtlı" in page
+    assert "Gerekçeler" in page and "Test gerekçesi" in page
+    assert PricePrediction.query.one().reason_list == ["Test gerekçesi"]

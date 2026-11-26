@@ -94,7 +94,7 @@ def suggest_for_product(product, refresh=False):
     if cached is not None and not refresh:
         advice = baseline if cached.model_name == RULE_MODEL else Advice(
             cached.trend, float(cached.predicted_price), cached.confidence or 0,
-            cached.recommendation or "", [], source="llm")
+            cached.recommendation or "", cached.reason_list, source="llm")
         return _finish(product, market, unit, series, stats, advice, cached, from_cache=True)
     if refresh and todays.count() >= MAX_DAILY_REFRESH:
         raise ServiceError(f"Bu ürün için bugün en fazla {MAX_DAILY_REFRESH} kez öneri hesaplanabilir.")
@@ -111,6 +111,7 @@ def suggest_for_product(product, refresh=False):
         target_date=_today_utc() + timedelta(days=FORECAST_DAYS),
         trend=advice.trend, confidence=advice.confidence,
         recommendation=advice.recommendation[:255],
+        reasons=json.dumps(advice.reasons, ensure_ascii=False),
     )
     db.session.add(prediction)
     db.session.commit()

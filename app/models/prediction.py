@@ -21,5 +21,18 @@ class PricePrediction(BaseModel):
     trend = db.Column(db.String(10), nullable=False)
     confidence = db.Column(db.Float)                # 0-1 arası güven skoru
     recommendation = db.Column(db.String(255))      # örn. "Fiyat yükseliyor, 1 hafta bekleyin"
+    # v0.10.7: Gerekçeler (JSON metin listesi). Yoksa kayıtlı öneri yeniden gösterilirken
+    # yapay zekânın gerekçeleri kayboluyordu ("Yeniden hesapla" sonrası sayfa kayıttan açılır).
+    reasons = db.Column(db.Text)
+
+    @property
+    def reason_list(self):
+        import json
+
+        try:
+            value = json.loads(self.reasons or "[]")
+        except ValueError:
+            return []
+        return [item for item in value if isinstance(item, str)] if isinstance(value, list) else []
 
     product = db.relationship("Product", back_populates="predictions")

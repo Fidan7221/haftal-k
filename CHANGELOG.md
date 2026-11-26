@@ -7,6 +7,12 @@ Her sürüm bir Git etiketiyle (`git tag -a vX.Y.Z`) işaretlenir.
 ## [Yayımlanmadı]
 - Hafta 11: Değerlendirme ve itibar modülü (planlanan → `0.11.0`)
 
+## [0.10.7] - 2026-11-27
+### Düzeltildi
+- Yapay zekânın gerekçeleri "Yeniden hesapla" sonrası görünmüyordu (kayıtlı öneride gerekçe alanı yoktu).
+  `price_predictions.reasons` sütunu eklendi (migration `b81c4e2d9a57`)
+- Testler: toplam 191
+
 ## [0.10.6] - 2026-11-27
 ### Düzeltildi
 - Canlıda Gemini fiyat önerisi zaman aşımına uğruyordu (`gemini-3.8-flash` 30 sn içinde yanıt vermedi,

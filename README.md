@@ -42,7 +42,7 @@ flask seed-demo                   # demo üretici/müşteri + ilanlar (.env'de D
 flask fetch-prices --days 60      # hal fiyatları (Hafta 9; varsayılan: sahte servis, internet gerekmez)
 
 python run.py                     # http://127.0.0.1:5000
-python -m pytest                  # testler (190 test)
+python -m pytest                  # testler (191 test)
 ```
 
 ---
