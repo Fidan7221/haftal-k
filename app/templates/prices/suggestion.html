@@ -106,7 +106,7 @@
     <p class="small text-muted mt-3 mb-0">
       <i class="bi bi-exclamation-circle"></i> Bu bir <strong>öneridir</strong>, kesin bir tahmin değildir.
       Geçmiş hal fiyatlarına dayanır; hava, maliyet ve talep gibi etkenleri bilmez. Son karar sizindir.
-      {% if result.used_ai %}Öneri yapay zekâ (Claude) ile üretildi ve kurallarımızla doğrulandı.{% endif %}
+      {% if result.used_ai %}Öneri yapay zekâ ({{ result.prediction.model_name }}) ile üretildi ve kurallarımızla doğrulandı.{% endif %}
     </p>
   {% endif %}
 </div>

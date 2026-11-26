@@ -4,7 +4,7 @@
 dersinin haftalık projesi. Kod, yorumlar, belgeler ve kullanıcı arayüzü **Türkçe**; yeni kod da
 Türkçe yorumlu ve öğrencinin sözlü sınavda anlatabileceği sadelikte olmalı.
 
-- Sürüm: `0.10.1` (`app/__init__.py` → `__version__`; CHANGELOG ile aynı tutulur)
+- Sürüm: `0.10.2` (`app/__init__.py` → `__version__`; CHANGELOG ile aynı tutulur)
 - Teknoloji: Python 3 + Flask, SQLAlchemy, SQLite (yerel) / PostgreSQL (Render), Bootstrap 5, pytest
 - Haftalık ders planı README'deki "Haftalara göre durum" tablosunda. Sıradaki: **Hafta 11 — Değerlendirme ve İtibar Modülü**
 
@@ -12,7 +12,7 @@ Türkçe yorumlu ve öğrencinin sözlü sınavda anlatabileceği sadelikte olma
 
 ```
 python run.py                     # http://127.0.0.1:5000
-python -m pytest                  # 182 test, ~3 dk
+python -m pytest                  # 189 test, ~3 dk
 flask db upgrade                  # migration'lar migrations_flask/ içinde (migrations/ Hafta 4 Node.js'e ait)
 flask seed-db / seed-demo / create-admin
 flask remove-demo-listings        # demo ilanlarını Pazar'dan kaldırır (Render açılışında çalışır)
@@ -55,12 +55,15 @@ python build_exe.py               # masaüstü .exe (masaustu.py)
   kart formunu kullanacak şekilde değiştirildi.
 - Kart bilgisi veritabanına/günlüğe yazılmaz, forma geri doldurulmaz. Form Luhn + son kullanma kontrol eder.
 - Sayfalar: `/hal-fiyatlari` (herkese açık), yönetici `POST /yonetici/fiyatlar/guncelle`.
-- `render.yaml`: açılışta `flask fetch-prices --days 60`; `USE_MOCK_APIS=1`, `ANTHROPIC_API_KEY` (sync: false).
+- `render.yaml`: açılışta `flask fetch-prices --days 60`; `USE_MOCK_APIS=1`, `GEMINI_API_KEY`, `ANTHROPIC_API_KEY` (sync: false).
 
 ## Hafta 10 — Yapay zekâ bileşeni — yapılanlar ve kararlar
 
-- Sağlayıcı: **Anthropic Claude**, resmi `anthropic` Python SDK'sı (1.17 kurulu), model `claude-opus-5-5`
-  (`AI_MODEL` ile değişir). Anahtar `ANTHROPIC_API_KEY`; yoksa bileşen kapalı ve kural tabanlı öneri kullanılır.
+- İki sağlayıcı (`AI_PROVIDER`; boşsa `GEMINI_API_KEY` doluysa gemini, değilse anthropic):
+  - **Google Gemini** `gemini-3.8-flash` (ücretsiz katman, `GEMINI_API_KEY`): `call_gemini`, REST, Hafta 9'daki
+    `request_json` ile; şema reddedilirse (400) şemasız bir kez daha dener. Testlerde `gemini_request` monkeypatch'lenir.
+  - **Anthropic Claude** `claude-opus-5-5` (ücretli, `ANTHROPIC_API_KEY`): `call_anthropic`, resmi `anthropic` SDK'sı (1.17).
+  - Anahtar yoksa bileşen kapalı ve kural tabanlı öneri kullanılır. `TestingConfig` sağlayıcıyı anthropic'e sabitler.
 - `app/ai/trend.py` (yapay zekâsız): son 21 güne doğrusal regresyon, R², oynaklık, 7 gün tahmini;
   ±%3 eşiğiyle up/down/stable; `rule_based_advice` yedek ve karşılaştırma ölçüsü.
 - `app/ai/llm_advisor.py`: sabit `SYSTEM_PROMPT` + `build_prompt` (seri + hesaplanan göstergeler),
@@ -77,7 +80,8 @@ python build_exe.py               # masaüstü .exe (masaustu.py)
 
 ## Bilinen açık noktalar
 
-- Claude API'ye **gerçek bir istek hiç atılmadı** (anahtar yok, para harcanmasın diye); yalnızca sahte istemciyle test edildi.
+- Yapay zekâya (Gemini veya Claude) **gerçek bir istek hiç atılmadı**: ne yerelde `.env` ne de (bilindiği kadarıyla) Render'da anahtar var.
+  Yalnızca sahte istemciyle test edildi. Ücretsiz yol: aistudio.google.com'dan `GEMINI_API_KEY` alınıp Render'a girilmesi.
 - Masaüstü .exe paketine `anthropic` eklenmedi; orada yapay zekâ kapalı, kural tabanlı çalışır.
   `masaustu.py` AI günlüğünü veri klasörüne yazar ve açılışta 60 günlük örnek fiyat yükler.
 - `docs/AI_KULLANIM_GUNLUGU.md` "Benim katkım" sütununa yalnızca öğrencinin GERÇEKTEN yaptığı işler yazılır;

@@ -1,7 +1,10 @@
 """Yapay zekâ (LLM) ile satış zamanı önerisi (Hafta 10).
 
-Model: Anthropic Claude (Messages API, resmi `anthropic` Python SDK'sı).
-Anahtar: ANTHROPIC_API_KEY ortam değişkeni (SDK kendisi okur; kodda yok).
+Sağlayıcı (config.AI_PROVIDER):
+  gemini    -> Google Gemini REST API, ÜCRETSİZ katman. Anahtar: GEMINI_API_KEY
+               (https://aistudio.google.com -> Get API key). Ek paket gerekmez (requests).
+  anthropic -> Anthropic Claude (resmi `anthropic` SDK'sı), ücretli. Anahtar: ANTHROPIC_API_KEY.
+Anahtarlar yalnızca ortam değişkeninde; kodda yok. İstem ve doğrulama iki sağlayıcıda AYNIDIR.
 
 ÜÇ ADIM:
   1) build_prompt()    İstem (prompt) tasarımı: modele HAM VERİ + bizim hesapladığımız
@@ -90,6 +93,103 @@ def create_client(config):
 
 def call_model(config, user_prompt):
     """Modeli çağırır. Dönüş: (ham_metin, model_adı). Hata: LlmError."""
+    if config.get("AI_PROVIDER") == "gemini":
+        return call_gemini(config, user_prompt)
+    return call_anthropic(config, user_prompt)
+
+
+# --- Google Gemini (ücretsiz katman) ----------------------------------------------------
+
+GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+
+# Gemini'nin yanıt şeması (OpenAPI alt kümesi; "additionalProperties" desteklenmez)
+GEMINI_SCHEMA = {
+    "type": "OBJECT",
+    "properties": {
+        "trend": {"type": "STRING", "enum": list(Trend.ALL)},
+        "predicted_price_7d": {"type": "NUMBER"},
+        "confidence": {"type": "NUMBER"},
+        "recommendation": {"type": "STRING"},
+        "reasons": {"type": "ARRAY", "items": {"type": "STRING"}},
+    },
+    "required": ["trend", "predicted_price_7d", "confidence", "recommendation", "reasons"],
+}
+
+
+def gemini_request(url, headers, body, timeout):
+    """HTTP isteği (Hafta 9'daki ortak katman: zaman aşımı, 429/5xx'te yeniden deneme).
+    Testlerde sahte bir fonksiyonla değiştirilir (monkeypatch)."""
+    from app.integrations.http import request_json
+
+    return request_json("POST", url, timeout=timeout, max_retries=1, headers=headers, json_body=body)
+
+
+def call_gemini(config, user_prompt):
+    import os
+
+    from app.integrations import http as http_layer
+
+    key = os.environ.get("GEMINI_API_KEY", "").strip()
+    if not key:
+        raise LlmError("GEMINI_API_KEY tanımlı değil.")
+    model = config.get("AI_MODEL") or "gemini-3.8-flash"
+    url = GEMINI_URL.format(model=model)
+    headers = {"x-goog-api-key": key, "Content-Type": "application/json"}  # anahtar adreste değil, başlıkta
+    body = {
+        "systemInstruction": {"parts": [{"text": SYSTEM_PROMPT}]},
+        "contents": [{"role": "user", "parts": [{"text": user_prompt}]}],
+        "generationConfig": {
+            "responseMimeType": "application/json",   # yanıt JSON olmak zorunda
+            "responseSchema": GEMINI_SCHEMA,
+            "temperature": 0.2,                       # yorum tutarlı olsun, yaratıcılık gerekmez
+            "maxOutputTokens": 4096,
+        },
+    }
+    timeout = config.get("AI_TIMEOUT", 30)
+    try:
+        try:
+            data = gemini_request(url, headers, body, timeout)
+        except http_layer.ApiClientError:
+            # Bazı modeller şemayı desteklemeyebilir: şemasız (yalnızca JSON) bir kez daha dene.
+            # Biçimi zaten validate_output kontrol ediyor.
+            body["generationConfig"].pop("responseSchema")
+            data = gemini_request(url, headers, body, timeout)
+    except http_layer.ApiTimeoutError:
+        raise LlmError("Yapay zekâ servisi zamanında yanıt vermedi (zaman aşımı).") from None
+    except http_layer.ApiConnectionError:
+        raise LlmError("Yapay zekâ servisine bağlanılamadı.") from None
+    except http_layer.ApiRateLimitError:
+        raise LlmError("Ücretsiz katmanın hız sınırına takıldı; biraz sonra tekrar deneyin.") from None
+    except http_layer.ApiAuthError:
+        raise LlmError("Yapay zekâ API anahtarı geçersiz (GEMINI_API_KEY).") from None
+    except http_layer.IntegrationError as error:
+        status = f" (HTTP {error.status_code})" if error.status_code else ""
+        raise LlmError(f"Yapay zekâ servisi hata döndürdü{status}. Model adı doğru mu? (AI_MODEL={model})") from None
+
+    if not isinstance(data, dict):
+        raise LlmError("Yapay zekâ yanıtı okunamadı.")
+    if (data.get("promptFeedback") or {}).get("blockReason"):
+        raise LlmError("Model bu isteği yanıtlamadı (güvenlik filtresi).")
+    candidates = data.get("candidates") or []
+    if not candidates:
+        raise LlmError("Model boş yanıt döndürdü.")
+    candidate = candidates[0]
+    reason = candidate.get("finishReason")
+    if reason == "MAX_TOKENS":
+        raise LlmError("Model yanıtı yarıda kesildi (MAX_TOKENS).")
+    if reason in ("SAFETY", "RECITATION", "PROHIBITED_CONTENT", "BLOCKLIST"):
+        raise LlmError(f"Model bu isteği yanıtlamadı ({reason}).")
+    parts = (candidate.get("content") or {}).get("parts") or []
+    # "Düşünme" parçaları (thought) cevaba dahil değildir
+    text = "".join(part.get("text", "") for part in parts if not part.get("thought"))
+    if not text.strip():
+        raise LlmError("Model boş yanıt döndürdü.")
+    return text, data.get("modelVersion") or model
+
+
+# --- Anthropic Claude (ücretli) --------------------------------------------------------
+
+def call_anthropic(config, user_prompt):
     try:
         import anthropic
     except ImportError:

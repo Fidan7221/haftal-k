@@ -57,7 +57,8 @@ def ai_status():
     config = current_app.config
     if config.get("AI_ENABLED"):
         return True, f"Yapay zekâ açık ({config.get('AI_MODEL')})"
-    return False, "Yapay zekâ kapalı (ANTHROPIC_API_KEY tanımlı değil): kural tabanlı öneri kullanılıyor."
+    return False, ("Yapay zekâ kapalı (GEMINI_API_KEY veya ANTHROPIC_API_KEY tanımlı değil): "
+                   "kural tabanlı öneri kullanılıyor.")
 
 
 def _today_utc():

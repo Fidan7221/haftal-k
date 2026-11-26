@@ -301,3 +301,71 @@ def test_admin_ai_log_page(app, client, producer_product, fake_ai):
     client.post("/auth/login", data={"email": "yonetici@test.com", "password": "Parola123"})
     page = client.get("/yonetici/ai-gunlugu").get_data(as_text=True)
     assert "Domates" in page and "Reddedildi" in page and "geçerli JSON değil" in page
+
+
+# --- Ücretsiz sağlayıcı: Google Gemini ----------------------------------------------------
+# Gerçek Gemini çağrılmaz: llm_advisor.gemini_request sahte fonksiyonla değiştirilir.
+
+def _gemini_response(text, finish="STOP"):
+    return {"candidates": [{"content": {"parts": [{"text": text}]}, "finishReason": finish}],
+            "modelVersion": "gemini-test"}
+
+
+@pytest.fixture
+def fake_gemini(app, monkeypatch):
+    app.config.update(AI_ENABLED=True, AI_PROVIDER="gemini", AI_MODEL="gemini-test")
+    monkeypatch.setenv("GEMINI_API_KEY", "test-anahtari")
+    calls = []
+
+    def install(*responses):
+        queue = list(responses)
+
+        def fake_request(url, headers, body, timeout):
+            calls.append({"url": url, "headers": headers, "body": body})
+            item = queue.pop(0)
+            if isinstance(item, Exception):
+                raise item
+            return item
+        monkeypatch.setattr(llm_advisor, "gemini_request", fake_request)
+        return calls
+    return install
+
+
+def test_gemini_output_is_used(producer_product, fake_gemini):
+    calls = fake_gemini(_gemini_response(_matching_output(producer_product)))
+    result = ai_service.suggest_for_product(producer_product)
+    assert result.used_ai and result.prediction.model_name == "gemini-test"
+    call = calls[0]
+    assert call["headers"]["x-goog-api-key"] == "test-anahtari"    # anahtar başlıkta
+    assert "test-anahtari" not in call["url"]                       # adreste değil
+    assert call["body"]["generationConfig"]["responseMimeType"] == "application/json"
+    assert call["body"]["systemInstruction"]["parts"][0]["text"] == llm_advisor.SYSTEM_PROMPT
+
+
+def test_gemini_retries_without_schema_on_400(producer_product, fake_gemini):
+    from app.integrations.http import ApiClientError
+
+    calls = fake_gemini(ApiClientError("400", 400), _gemini_response(_matching_output(producer_product)))
+    result = ai_service.suggest_for_product(producer_product)
+    assert result.used_ai and len(calls) == 2
+    assert "responseSchema" not in calls[1]["body"]["generationConfig"]
+
+
+@pytest.mark.parametrize("response, reason", [
+    (_gemini_response("", "MAX_TOKENS"), "yarıda kesildi"),
+    (_gemini_response("", "SAFETY"), "yanıtlamadı"),
+    ({"candidates": []}, "boş yanıt"),
+    (_gemini_response("json değil"), "geçerli JSON değil"),
+])
+def test_bad_gemini_output_falls_back(producer_product, fake_gemini, response, reason):
+    fake_gemini(response)
+    result = ai_service.suggest_for_product(producer_product)
+    assert not result.used_ai and any(reason in note for note in result.notes)
+
+
+def test_gemini_rate_limit_falls_back(producer_product, fake_gemini):
+    from app.integrations.http import ApiRateLimitError
+
+    fake_gemini(ApiRateLimitError("429", 429))
+    result = ai_service.suggest_for_product(producer_product)
+    assert not result.used_ai and any("hız sınırı" in note for note in result.notes)

@@ -81,6 +81,64 @@ Sepet ──checkout──> Sipariş (ödeme bekleniyor, stok ayrıldı)
 | 4000 0000 0000 0119 | Zaman aşımı |
 | 4000 0000 0000 0259 | Servis hatası (500) |
 
+## 5.1 Örnek istekler ve yanıtlar (API belgesini okuma)
+
+Bir API'yi bağlamadan önce belgesinden şu dört şey çıkarılır: **adres + yöntem**, **kimlik doğrulama**,
+**istek gövdesi** ve **yanıt/hata biçimi**. Aşağıdaki örnekler koddaki gerçek biçimlerdir.
+
+**a) Hal fiyatı — başarılı** (`price_api.py`; fiyatlar sahte servisin 26.11.2026 için ürettiği değerler)
+
+```http
+GET {PRICE_API_URL}/prices?date=2026-11-26
+X-API-Key: <anahtar>            ← anahtar başlıkta, adreste değil
+Accept: application/json
+```
+```json
+{"date": "2026-11-26",
+ "items": [{"product": "Domates", "unit": "kg", "min": 23.93, "max": 32.37, "avg": 28.15},
+           {"product": "Biber",   "unit": "kg", "min": 28.22, "max": 38.18, "avg": 33.20}]}
+```
+Okuma: `items` liste değilse `ApiResponseError`. Her satırda `min ≤ avg ≤ max` kontrol edilir, bozuk satır atlanır.
+
+**b) Hız sınırı — hata**
+```http
+HTTP/1.1 429 Too Many Requests
+Retry-After: 2
+```
+Okuma: 2 sn beklenir (en fazla 5), istek yeniden gönderilir. Yine 429 gelirse `ApiRateLimitError` ve senkronizasyon durur.
+
+**c) Ödeme** (`payment_api.py`)
+```http
+POST {PAYMENT_API_URL}/payments
+Authorization: Bearer <api anahtarı>
+Idempotency-Key: order-12-3f9c…      ← aynı anahtarla tekrar gelirse yeni ödeme sayılmaz
+X-Signature: <gövdenin HMAC-SHA256 imzası, gizli anahtarla>
+Content-Type: application/json
+
+{"amount":"285.00","card":{"cvc":"123","exp_month":12,"exp_year":2030,"holder":"Deneme Kullanıcı",
+ "number":"4111111111111111"},"currency":"TRY","description":"Tarladan Sofraya sipariş #12"}
+```
+```json
+{"id": "pay_8KD2…", "status": "succeeded"}
+{"status": "declined", "error": {"code": "insufficient_funds", "message": "Kartın bakiyesi yetersiz."}}
+```
+Okuma: `status` yoksa ya da başarılıda `id` yoksa `ApiResponseError`. Reddedilen ödemede sipariş "ödeme bekleniyor"da kalır.
+
+**d) Gerçek bir harici API: Google Gemini** (Hafta 10'daki yapay zekâ çağrısı, aynı HTTP katmanını kullanır)
+```http
+POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent
+x-goog-api-key: <GEMINI_API_KEY>
+Content-Type: application/json
+
+{"systemInstruction": {"parts": [{"text": "Sen ... tarım piyasası analistisin ..."}]},
+ "contents": [{"role": "user", "parts": [{"text": "Ürün: Domates ... <fiyat_serisi> ..."}]}],
+ "generationConfig": {"responseMimeType": "application/json", "responseSchema": {...},
+                      "temperature": 0.2, "maxOutputTokens": 4096}}
+```
+Yanıtta okunan alanlar: `candidates[0].content.parts[].text` (cevap JSON'u), `candidates[0].finishReason`
+(`MAX_TOKENS` → kesik yanıt, `SAFETY` → reddetme), `promptFeedback.blockReason`, `modelVersion`.
+Hata kodları Hafta 9 tablosuyla aynı yönetilir: 400 → şemasız tekrar, 401/403 → anahtar geçersiz, 429 → hız sınırı.
+
 ## 6. Çalıştırma
 
 ```

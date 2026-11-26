@@ -39,5 +39,7 @@ services:
       # --- Hafta 9-10 ---
       - key: USE_MOCK_APIS
         value: "1"             # gerçek fiyat/ödeme API'si bağlanınca "0" yapılır
+      - key: GEMINI_API_KEY
+        sync: false            # ÜCRETSİZ yapay zekâ anahtarı (aistudio.google.com); boş bırakılabilir
       - key: ANTHROPIC_API_KEY
         sync: false            # Yapay zekâ anahtarı: Render kurulumda SORAR, koda yazılmaz (boş bırakılabilir)

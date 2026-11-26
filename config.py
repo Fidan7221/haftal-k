@@ -90,10 +90,18 @@ class Config:
     PRICE_SYNC_COOLDOWN = 60         # Yönetici "Fiyatları güncelle"ye en sık dakikada bir basabilir
 
     # --- Yapay zekâ bileşeni (Hafta 10) ---
-    # Anahtar yine yalnızca ortam değişkeninde: ANTHROPIC_API_KEY. Yoksa bileşen
-    # kural tabanlı (yapay zekâsız) öneriye düşer; uygulama yine çalışır.
-    AI_ENABLED = _env_bool("AI_ENABLED", True) and bool(os.environ.get("ANTHROPIC_API_KEY", "").strip())
-    AI_MODEL = os.environ.get("AI_MODEL", "claude-opus-5-5").strip()
+    # İki sağlayıcı desteklenir:
+    #   gemini    -> Google Gemini, ÜCRETSİZ katman (anahtar: GEMINI_API_KEY, aistudio.google.com)
+    #   anthropic -> Anthropic Claude, ücretli (anahtar: ANTHROPIC_API_KEY)
+    # AI_PROVIDER boşsa: GEMINI_API_KEY varsa gemini, yoksa anthropic.
+    # Anahtarlar yalnızca ortam değişkeninde. Anahtar yoksa bileşen kural tabanlı
+    # (yapay zekâsız) öneriye düşer; uygulama yine çalışır.
+    AI_PROVIDER = (os.environ.get("AI_PROVIDER", "").strip().lower()
+                   or ("gemini" if os.environ.get("GEMINI_API_KEY", "").strip() else "anthropic"))
+    AI_ENABLED = _env_bool("AI_ENABLED", True) and bool(os.environ.get(
+        "GEMINI_API_KEY" if AI_PROVIDER == "gemini" else "ANTHROPIC_API_KEY", "").strip())
+    AI_MODEL = os.environ.get("AI_MODEL", "").strip() or (
+        "gemini-3.8-flash" if AI_PROVIDER == "gemini" else "claude-opus-5-5")
     AI_TIMEOUT = 30                  # saniye
     AI_MIN_POINTS = 14               # Trend için en az 14 günlük fiyat gerekir
     AI_HISTORY_DAYS = 60             # Modele gönderilen en fazla gün sayısı
@@ -112,6 +120,8 @@ class TestingConfig(Config):
     # Testler internete ÇIKMAZ ve para/anahtar harcamaz: her zaman sahte servis
     USE_MOCK_APIS = True
     AI_ENABLED = False
+    AI_PROVIDER = "anthropic"        # .env'de Gemini anahtarı olsa da testler aynı kalsın
+    AI_MODEL = "claude-opus-5-5"
     AI_LOG_PATH = None
     PRICE_API_MIN_INTERVAL = 0
     PRICE_SYNC_COOLDOWN = 0

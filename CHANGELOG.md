@@ -7,6 +7,18 @@ Her sürüm bir Git etiketiyle (`git tag -a vX.Y.Z`) işaretlenir.
 ## [Yayımlanmadı]
 - Hafta 11: Değerlendirme ve itibar modülü (planlanan → `0.11.0`)
 
+## [0.10.2] - 2026-11-26
+### Eklendi
+- Ücretsiz yapay zekâ seçeneği: Google Gemini (ücretsiz katman). `.env` içine yalnızca
+  `GEMINI_API_KEY` yazılırsa öneriler Gemini ile üretilir; ek paket gerekmez (Hafta 9'daki HTTP katmanı kullanılır)
+- Ayarlar: `GEMINI_API_KEY`, `AI_PROVIDER` (gemini / anthropic); `AI_MODEL` sağlayıcıya göre varsayılan alır
+- Gemini şemayı reddederse (HTTP 400) şemasız bir kez daha denenir; hız sınırı (429) ve kesik/boş yanıt kural tabanlı öneriye düşer
+- Testler: Gemini yolu için 7 test (gerçek API çağrılmaz)
+
+### Değişti
+- Öneri sayfasında hangi modelin kullanıldığı yazıyor (önceden sabit "Claude")
+- Belgeler: Hafta 9'a örnek istek/yanıt bölümü (fiyat, hız sınırı, ödeme, Gemini); Hafta 10 belgesi iki sağlayıcıya göre güncellendi; test sayısı 189
+
 ## [0.10.1] - 2026-11-18
 ### Eklendi
 - `flask remove-demo-listings`: demo üreticilerin ilanlarını Pazar'dan kaldırır (siparişi olan kapatılır);

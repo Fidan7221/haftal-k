@@ -47,10 +47,12 @@ Anlamadığım kodu projeye almadım; anlamadığım yeri yapay zekâya tekrar s
 
 ---
 
-## Hafta 9-10: Uygulamanın içindeki yapay zekâ (Claude API)
+## Hafta 9-10: Uygulamanın içindeki yapay zekâ (Gemini veya Claude API)
 
 Hafta 10'dan itibaren yapay zekâ yalnızca geliştirme aracı değil, **uygulamanın bir parçası**:
-"Fiyat Trendi ve Satış Zamanı Önerisi" bileşeni Claude API'sini çağırır.
+"Fiyat Trendi ve Satış Zamanı Önerisi" bileşeni bir dil modeli API'sini çağırır. İki seçenek var:
+**Google Gemini** (ücretsiz katman, `GEMINI_API_KEY`) ve **Anthropic Claude** (ücretli, `ANTHROPIC_API_KEY`).
+Ücretsiz Gemini seçeneği v0.10.2'de eklendi; istem ve doğrulama iki sağlayıcıda aynıdır.
 - **İstem:** `app/ai/llm_advisor.py` → `SYSTEM_PROMPT` ve `build_prompt()` (sürüm: `PROMPT_VERSION`)
 - **Çıktı doğrulama:** `validate_output()`; geçmeyen çıktı kullanılmaz, kural tabanlı öneri gösterilir
 - **Her çağrının kaydı:** `instance/ai_gunlugu.jsonl` (istem, ham çıktı, sorunlar, hangi önerinin kullanıldığı); yönetici sayfası `/yonetici/ai-gunlugu`
