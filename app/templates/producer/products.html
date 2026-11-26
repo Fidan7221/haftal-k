@@ -75,9 +75,6 @@
                   <a href="{{ url_for('price.suggestion', product_id=product.id) }}"
                      class="btn btn-sm btn-outline-success" title="Fiyat trendi ve satış zamanı önerisi"
                      aria-label="Fiyat önerisi"><i class="bi bi-graph-up-arrow"></i></a>
-                  <a href="{{ url_for('price.photo_review', product_id=product.id) }}"
-                     class="btn btn-sm btn-outline-success" title="Yapay zekâ fotoğraf incelemesi"
-                     aria-label="Fotoğraf incelemesi"><i class="bi bi-camera"></i></a>
                   {% if product.is_active %}
                     <a href="{{ url_for('listing.new_listing', urun=product.id) }}"
                        class="btn btn-sm btn-outline-success" title="Bu ürüne ilan aç"><i class="bi bi-megaphone"></i></a>

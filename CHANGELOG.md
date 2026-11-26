@@ -7,6 +7,12 @@ Her sürüm bir Git etiketiyle (`git tag -a vX.Y.Z`) işaretlenir.
 ## [Yayımlanmadı]
 - Hafta 11: Değerlendirme ve itibar modülü (planlanan → `0.11.0`)
 
+## [0.10.5] - 2026-11-27
+### Kaldırıldı
+- Yapay zekâ fotoğraf incelemesi (0.10.4'te eklenmişti) isteğe göre kaldırıldı: sayfa, 📷 düğmesi,
+  `app/ai/photo_review.py`, testleri. Fotoğrafların veri tabanında saklanması kalıyor
+- Testler: toplam 190
+
 ## [0.10.4] - 2026-11-27
 ### Eklendi
 - **Fotoğraf incelemesi:** yapay zekâ (Gemini veya Claude) ürün fotoğrafına bakar; fotoğrafın ürünü

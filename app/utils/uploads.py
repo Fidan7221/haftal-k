@@ -63,22 +63,6 @@ def _db_image_id(relative_path):
     return None
 
 
-def read_product_image(relative_path, upload_root):
-    """Görselin baytlarını ve türünü döndürür: (bytes, "image/jpeg"); yoksa None.
-    Yapay zekâya fotoğraf göndermek için kullanılır (Hafta 10 fotoğraf incelemesi)."""
-    image_id = _db_image_id(relative_path)
-    if image_id is not None:
-        image = db.session.get(ProductImage, image_id)
-        return (image.data, image.content_type) if image else None
-    if not relative_path or relative_path.startswith("demo/"):
-        return None
-    full_path = os.path.join(upload_root, PRODUCT_SUBFOLDER, os.path.basename(relative_path))
-    if not os.path.isfile(full_path):
-        return None
-    with open(full_path, "rb") as file:
-        return file.read(), CONTENT_TYPES.get(get_extension(full_path), "image/jpeg")
-
-
 def delete_product_image(relative_path, upload_root):
     """Görseli siler (veri tabanından ya da eski sürümde yazıldığı diskten).
     Disk yolu dışarıdan değiştirilmiş olsa bile klasör dışına çıkamaz."""

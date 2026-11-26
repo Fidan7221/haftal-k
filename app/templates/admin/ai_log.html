@@ -16,7 +16,6 @@
         <span><strong>{{ e.hal_urunu }}</strong> · ürün #{{ e.urun_id }} · {{ e.model }} · istem {{ e.istem_surumu }}</span>
         <span>
           {% if e.kullanilan == "yapay_zeka" %}<span class="badge text-bg-success">Kullanıldı</span>
-          {% elif e.kullanilan == "kullanilmadi" %}<span class="badge text-bg-danger">Kullanılamadı</span>
           {% else %}<span class="badge text-bg-warning">Reddedildi → kural tabanlı</span>{% endif %}
           <span class="text-muted ms-2">{{ e.zaman }}</span>
         </span>
