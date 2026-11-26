@@ -101,8 +101,10 @@ class Config:
     AI_ENABLED = _env_bool("AI_ENABLED", True) and bool(os.environ.get(
         "GEMINI_API_KEY" if AI_PROVIDER == "gemini" else "ANTHROPIC_API_KEY", "").strip())
     AI_MODEL = os.environ.get("AI_MODEL", "").strip() or (
-        "gemini-3.8-flash" if AI_PROVIDER == "gemini" else "claude-opus-5-5")
-    AI_TIMEOUT = 30                  # saniye
+        # gemini-3.5-flash-lite: en hızlı ücretsiz Gemini modeli. gemini-3.8-flash canlıda 30 sn içinde
+        # yanıt veremedi (zaman aşımı); bu basit yorum görevi için hızlı model yeterli.
+        "gemini-3.5-flash-lite" if AI_PROVIDER == "gemini" else "claude-opus-5-5")
+    AI_TIMEOUT = 60                  # saniye; tek deneme (gunicorn sınırı 120 sn, gunicorn.conf.py)
     AI_MIN_POINTS = 14               # Trend için en az 14 günlük fiyat gerekir
     AI_HISTORY_DAYS = 60             # Modele gönderilen en fazla gün sayısı
     AI_LOG_PATH = os.path.join(BASE_DIR, "instance", "ai_gunlugu.jsonl")  # istem/çıktı günlüğü

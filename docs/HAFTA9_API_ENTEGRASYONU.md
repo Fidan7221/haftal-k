@@ -126,7 +126,7 @@ Okuma: `status` yoksa ya da başarılıda `id` yoksa `ApiResponseError`. Reddedi
 
 **d) Gerçek bir harici API: Google Gemini** (Hafta 10'daki yapay zekâ çağrısı, aynı HTTP katmanını kullanır)
 ```http
-POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent
+POST https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent
 x-goog-api-key: <GEMINI_API_KEY>
 Content-Type: application/json
 

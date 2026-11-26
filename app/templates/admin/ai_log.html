@@ -17,7 +17,7 @@
         <span>
           {% if e.kullanilan == "yapay_zeka" %}<span class="badge text-bg-success">Kullanıldı</span>
           {% else %}<span class="badge text-bg-warning">Reddedildi → kural tabanlı</span>{% endif %}
-          <span class="text-muted ms-2">{{ e.zaman }}</span>
+          <span class="text-muted ms-2">{{ e.zaman }}{% if e.sure_sn is defined %} · {{ e.sure_sn }} sn{% endif %}</span>
         </span>
       </div>
       <div class="card-body small">

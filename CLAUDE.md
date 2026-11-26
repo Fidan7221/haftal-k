@@ -4,7 +4,7 @@
 dersinin haftalık projesi. Kod, yorumlar, belgeler ve kullanıcı arayüzü **Türkçe**; yeni kod da
 Türkçe yorumlu ve öğrencinin sözlü sınavda anlatabileceği sadelikte olmalı.
 
-- Sürüm: `0.10.5` (`app/__init__.py` → `__version__`; CHANGELOG ile aynı tutulur)
+- Sürüm: `0.10.6` (`app/__init__.py` → `__version__`; CHANGELOG ile aynı tutulur)
 - Teknoloji: Python 3 + Flask, SQLAlchemy, SQLite (yerel) / PostgreSQL (Render), Bootstrap 5, pytest
 - Haftalık ders planı README'deki "Haftalara göre durum" tablosunda. Sıradaki: **Hafta 11 — Değerlendirme ve İtibar Modülü**
 
@@ -60,11 +60,11 @@ python build_exe.py               # masaüstü .exe (masaustu.py)
 ## Hafta 10 — Yapay zekâ bileşeni — yapılanlar ve kararlar
 
 - İki sağlayıcı (`AI_PROVIDER`; boşsa `GEMINI_API_KEY` doluysa gemini, değilse anthropic):
-  - **Google Gemini** `gemini-3.8-flash` (ücretsiz katman, `GEMINI_API_KEY`): `call_gemini`, REST, Hafta 9'daki
+  - **Google Gemini** `gemini-3.5-flash-lite` (ücretsiz katman, `GEMINI_API_KEY`): `call_gemini`, REST, Hafta 9'daki
     `request_json` ile; şema reddedilirse (400) şemasız bir kez daha dener. Testlerde `gemini_request` monkeypatch'lenir.
   - **Anthropic Claude** `claude-opus-5-5` (ücretli, `ANTHROPIC_API_KEY`): `call_anthropic`, resmi `anthropic` SDK'sı (1.17).
   - Anahtar yoksa bileşen kapalı ve kural tabanlı öneri kullanılır. `TestingConfig` sağlayıcıyı anthropic'e sabitler.
-  - Gemini'de `thinkingLevel: low` (düşünme maxOutputTokens'tan düşer). Canlıda gunicorn `timeout = 120` (`gunicorn.conf.py`);
+  - Gemini'de `thinkingLevel: minimal`, tek deneme, `AI_TIMEOUT = 60` (gemini-3.8-flash canlıda 30 sn'de yanıt veremedi). Canlıda gunicorn `timeout = 120` (`gunicorn.conf.py`);
     30 sn'lik varsayılan, yapay zekâ çağrısını kesip 503 veriyordu.
 - `app/ai/trend.py` (yapay zekâsız): son 21 güne doğrusal regresyon, R², oynaklık, 7 gün tahmini;
   ±%3 eşiğiyle up/down/stable; `rule_based_advice` yedek ve karşılaştırma ölçüsü.

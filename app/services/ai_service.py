@@ -14,6 +14,7 @@ gösterilir (API çağrılmaz). "Yeniden hesapla" ile günde en fazla MAX_DAILY_
 import json
 import logging
 import os
+import time
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
@@ -122,6 +123,7 @@ def _ask_ai(config, product, market, unit, series, stats, baseline):
              "urun_id": product.id, "hal_urunu": market, "istem_surumu": llm_advisor.PROMPT_VERSION,
              "model": config.get("AI_MODEL"), "istem": user_prompt}
     notes, warnings = [], []
+    started = time.monotonic()
     try:
         raw, model_used = llm_advisor.call_model(config, user_prompt)
         entry["model"] = model_used
@@ -133,6 +135,7 @@ def _ask_ai(config, product, market, unit, series, stats, baseline):
         entry["hata"] = str(error)
         advice, problems = None, [str(error)]
 
+    entry["sure_sn"] = round(time.monotonic() - started, 1)  # yavaşlık modelden mi, günlükte görünsün
     if advice is None:
         # Render'ın "Logs" ekranında da görünsün (AI günlüğü dosyası her kurulumda silinir)
         log.warning("Yapay zekâ çıktısı kullanılmadı (ürün #%s, %s): %s",

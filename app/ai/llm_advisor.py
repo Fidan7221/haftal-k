@@ -88,7 +88,7 @@ def create_client(config):
     import anthropic  # yalnızca gerektiğinde: paket kurulu değilse uygulama yine açılır
 
     # max_retries=1: SDK 429/5xx/zaman aşımında 1 kez kendisi yeniden dener
-    return anthropic.Anthropic(timeout=config.get("AI_TIMEOUT", 30), max_retries=1)
+    return anthropic.Anthropic(timeout=config.get("AI_TIMEOUT", 60), max_retries=1)
 
 
 def call_model(config, user_prompt):
@@ -117,11 +117,14 @@ GEMINI_SCHEMA = {
 
 
 def gemini_request(url, headers, body, timeout):
-    """HTTP isteği (Hafta 9'daki ortak katman: zaman aşımı, 429/5xx'te yeniden deneme).
-    Testlerde sahte bir fonksiyonla değiştirilir (monkeypatch)."""
+    """HTTP isteği (Hafta 9'daki ortak katman). Testlerde sahte fonksiyonla değiştirilir (monkeypatch).
+
+    max_retries=0: Yanıt vermeyen modeli tekrar beklemek süreyi ikiye katlıyordu (2 x 30 sn) ve
+    sonunda yine kural tabanlı öneriye düşülüyordu. Tek deneme, daha uzun süre (AI_TIMEOUT).
+    """
     from app.integrations.http import request_json
 
-    return request_json("POST", url, timeout=timeout, max_retries=1, headers=headers, json_body=body)
+    return request_json("POST", url, timeout=timeout, max_retries=0, headers=headers, json_body=body)
 
 
 def call_gemini(config, user_prompt):
@@ -132,7 +135,7 @@ def call_gemini(config, user_prompt):
     key = os.environ.get("GEMINI_API_KEY", "").strip()
     if not key:
         raise LlmError("GEMINI_API_KEY tanımlı değil.")
-    model = config.get("AI_MODEL") or "gemini-3.8-flash"
+    model = config.get("AI_MODEL") or "gemini-3.5-flash-lite"
     url = GEMINI_URL.format(model=model)
     headers = {"x-goog-api-key": key, "Content-Type": "application/json"}  # anahtar adreste değil, başlıkta
     body = {
@@ -142,14 +145,15 @@ def call_gemini(config, user_prompt):
             "responseMimeType": "application/json",   # yanıt JSON olmak zorunda
             "responseSchema": GEMINI_SCHEMA,
             "temperature": 0.2,                       # yorum tutarlı olsun, yaratıcılık gerekmez
-            # Gemini 3 modelleri cevaptan önce "düşünür" ve düşünme de maxOutputTokens'tan düşer.
-            # Varsayılan (medium) düşünme sınırı doldurup cevabı yarıda kesebiliyor (MAX_TOKENS)
-            # ve yanıtı yavaşlatıyor. Bu basit yorum görevi için "low" yeterli.
-            "thinkingConfig": {"thinkingLevel": "low"},
+            # Gemini 3 modelleri cevaptan önce "düşünür"; düşünme hem yanıtı yavaşlatır hem de
+            # maxOutputTokens'tan düşer (cevap yarıda kalabilir). Veriyi yorumlayıp JSON yazmak için
+            # "minimal" yeterli (gemini-3.5-flash-lite destekler; desteklemeyen model 400 verirse
+            # aşağıda düşünme ayarı olmadan tekrar denenir).
+            "thinkingConfig": {"thinkingLevel": "minimal"},
             "maxOutputTokens": 8192,
         },
     }
-    timeout = config.get("AI_TIMEOUT", 30)
+    timeout = config.get("AI_TIMEOUT", 60)
     try:
         try:
             data = gemini_request(url, headers, body, timeout)

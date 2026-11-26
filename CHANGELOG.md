@@ -7,6 +7,13 @@ Her sürüm bir Git etiketiyle (`git tag -a vX.Y.Z`) işaretlenir.
 ## [Yayımlanmadı]
 - Hafta 11: Değerlendirme ve itibar modülü (planlanan → `0.11.0`)
 
+## [0.10.6] - 2026-11-27
+### Düzeltildi
+- Canlıda Gemini fiyat önerisi zaman aşımına uğruyordu (`gemini-3.8-flash` 30 sn içinde yanıt vermedi,
+  tekrar deneme de aşıldı; kural tabanlı öneriye düşülüyordu). Varsayılan model `gemini-3.5-flash-lite`
+  (en hızlı ücretsiz model), düşünme `minimal`, tek deneme ve 60 sn zaman aşımı
+- AI günlüğünde her çağrının süresi (sn) görünüyor
+
 ## [0.10.5] - 2026-11-27
 ### Kaldırıldı
 - Yapay zekâ fotoğraf incelemesi (0.10.4'te eklenmişti) isteğe göre kaldırıldı: sayfa, 📷 düğmesi,

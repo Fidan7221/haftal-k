@@ -3,7 +3,7 @@
 **Amaç:** Geçmiş hal fiyatı verisinden trend ve satış zamanı önerisi üreten bileşeni kurmak.
 **Sürüm:** `v0.10.5` · **Testler:** `tests/test_ai.py`
 **Model (iki sağlayıcı, `AI_PROVIDER`):**
-- **Google Gemini** (`gemini-3.8-flash`) — **ücretsiz katman**, anahtar `GEMINI_API_KEY`. Ek paket yok; Hafta 9'daki HTTP katmanıyla REST çağrısı.
+- **Google Gemini** (`gemini-3.5-flash-lite`, en hızlı ücretsiz model) — **ücretsiz katman**, anahtar `GEMINI_API_KEY`. Ek paket yok; Hafta 9'daki HTTP katmanıyla REST çağrısı.
 - **Anthropic Claude** (`claude-opus-5-5`) — ücretli, anahtar `ANTHROPIC_API_KEY`, resmi `anthropic` Python SDK'sı.
 
 `AI_PROVIDER` boşsa: `GEMINI_API_KEY` doluysa Gemini, değilse Claude. Model adı `AI_MODEL` ile değişir.
@@ -46,7 +46,7 @@
 - **Kullanıcı mesajı** (`build_prompt`): ürün adı, birim, tarih–fiyat listesi (`<fiyat_serisi>` etiketi içinde) ve **bizim hesapladığımız göstergeler**. Model göstergelerle farklı düşünürse gerekçesini yazması istenir.
 - **Yapılandırılmış çıktı:** Modele bir JSON şeması verilir (`trend`, `predicted_price_7d`, `confidence`, `recommendation`, `reasons`); model serbest metin döndüremez.
   Claude'da `output_config.format`, Gemini'de `responseMimeType: application/json` + `responseSchema`. Gemini şemayı reddederse (HTTP 400) şemasız JSON ile bir kez daha denenir; biçimi zaten `validate_output` kontrol eder.
-- **Tutarlılık:** Claude'da `effort: "low"` (basit yorum görevi, hızlı ve ucuz); Gemini'de `temperature: 0.2` (yaratıcılık değil tutarlı yorum gerekir).
+- **Tutarlılık:** Claude'da `effort: "low"` (basit yorum görevi, hızlı ve ucuz); Gemini'de `temperature: 0.2` ve `thinkingLevel: "minimal"` (hız için; yaratıcılık değil tutarlı yorum gerekir).
 - **Reddetme:** Claude'da yedek model (`fallbacks: "default"`) önce başka modelle dener. Gemini'de güvenlik filtresi (`blockReason`, `finishReason: SAFETY`) yakalanır. Her iki durumda da sonunda kural tabanlı öneriye düşülür.
 - **İstem sürümü:** `PROMPT_VERSION = "v1"` günlüğe yazılır. İstem değişirse sürüm artırılır; hangi çıktının hangi istemle üretildiği bilinir.
 - **Gizlilik:** Modele kişisel veri gönderilmez. Yalnızca ürün türü ve hal fiyatları gider; üretici adı, çiftlik adı, e-posta gitmez (test: `test_prompt_contains_data_but_no_personal_info`).
