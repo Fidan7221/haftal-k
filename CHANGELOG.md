@@ -7,6 +7,10 @@ Her sürüm bir Git etiketiyle (`git tag -a vX.Y.Z`) işaretlenir.
 ## [Yayımlanmadı]
 - Hafta 13: Test ve hata ayıklama (planlanan → `0.13.0`)
 
+## [0.12.1] - 2026-11-27
+### Düzeltildi
+- Bildirimlerde tutar ve miktar Türkçe biçimde: "180,00 TL" (önceden "180.00 TL"), "4,5 kg"
+
 ## [0.12.0] - 2026-11-27 — Hafta 12: Satış Raporu ve Bildirimler
 ### Eklendi
 - Satış raporu: üretici `/uretici/rapor`, yönetici `/yonetici/rapor` (son 7/30/90 gün). Ciro (yalnızca

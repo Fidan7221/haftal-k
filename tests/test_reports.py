@@ -219,7 +219,7 @@ def test_order_lifecycle_notifications(client):
     assert notes(PRODUCER, NotificationKind.ORDER_PAID) == []      # bekleyen siparişe bildirim yok
     set_status(client, order, OrderStatus.PAID)
     [n] = notes(PRODUCER, NotificationKind.ORDER_PAID)
-    assert f"#{order.id} ödendi" in n.message and n.link == f"/uretici/siparisler/{order.id}"
+    assert f"#{order.id} ödendi (50,00 TL)" in n.message and n.link == f"/uretici/siparisler/{order.id}"
 
     login(client, PRODUCER); set_status(client, order, OrderStatus.SHIPPED)
     assert len(notes(CUSTOMER, NotificationKind.ORDER_SHIPPED)) == 1

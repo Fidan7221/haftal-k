@@ -34,6 +34,20 @@ def _url(endpoint, **values):
         return None
 
 
+def _tl(amount):
+    """Decimal('1500.5') -> '1.500,50 TL' (sitenin geri kalanıyla aynı Türkçe biçim)."""
+    text = f"{Decimal(amount):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    return f"{text} TL"
+
+
+def _qty(value):
+    """Decimal('4.50') -> '4,5' ; Decimal('4.00') -> '4'"""
+    text = f"{Decimal(value).quantize(Decimal('0.01')):f}"
+    if "." in text:
+        text = text.rstrip("0").rstrip(".")
+    return text.replace(".", ",")
+
+
 def notify(user, kind, message, link=None):
     if user is None:
         return None
@@ -48,7 +62,7 @@ def order_paid(order):
     producer = order.producer
     if producer:
         notify(producer.user, Kind.ORDER_PAID,
-               f"Sipariş #{order.id} ödendi ({order.total_amount:.2f} TL). Kargoya hazırlayabilirsiniz.",
+               f"Sipariş #{order.id} ödendi ({_tl(order.total_amount)}). Kargoya hazırlayabilirsiniz.",
                _url("order.producer_detail", order_id=order.id))
 
 
@@ -87,7 +101,7 @@ def stock_changed(listing, before, after):
         notify(owner, Kind.STOCK_OUT, f"'{listing.title}' ilanının stoğu bitti; ilan satıştan kalktı.", link)
     elif after <= LOW_STOCK_THRESHOLD < before:
         notify(owner, Kind.STOCK_LOW,
-               f"'{listing.title}' ilanında {after.normalize():f} {listing.product.unit} kaldı.", link)
+               f"'{listing.title}' ilanında {_qty(after)} {listing.product.unit} kaldı.", link)
 
 
 def review_received(review):
