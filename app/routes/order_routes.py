@@ -4,14 +4,15 @@ Müşteri: /siparislerim               (kendi siparişleri)
 Üretici: /uretici/siparisler         (kendi ürünlerinin siparişleri)
 Durum değişikliği: POST /siparis/<id>/durum  (kim neyi yapabilir -> order_service.TRANSITIONS)
 Ödeme (Hafta 9):  /siparislerim/<id>/odeme   (kart formu -> payment_service -> ödeme API'si)
+Değerlendirme (Hafta 11): POST /siparislerim/<id>/kalem/<kalem_id>/degerlendir
 """
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 
-from app.forms.shop_forms import OrderStatusForm, PaymentForm
+from app.forms.shop_forms import OrderStatusForm, PaymentForm, ReviewForm
 from app.models import OrderStatus, RoleName
 from app.repositories.order_repository import OrderRepository
-from app.services import order_service, payment_service
+from app.services import order_service, payment_service, review_service
 from app.services.errors import ServiceError
 from app.utils.decorators import role_required
 
@@ -54,11 +55,35 @@ def producer_detail(order_id):
     return _render_detail(order, producer_view=True)
 
 
-def _render_detail(order, producer_view):
+def _render_detail(order, producer_view, review_form=None):
+    # Hafta 11: Müşteri için her kalemin değerlendirilip değerlendirilemeyeceği (engel varsa nedeni)
+    review_problems = {} if producer_view else {
+        item.id: review_service.review_problem(current_user, item) for item in order.items}
     return render_template("orders/detail.html", order=order, producer_view=producer_view,
                            actions=order_service.allowed_actions(current_user, order),
                            can_pay=order_service.can_pay(current_user, order),
-                           status_form=OrderStatusForm(), statuses=OrderStatus)
+                           status_form=OrderStatusForm(), statuses=OrderStatus,
+                           review_form=review_form or ReviewForm(), review_problems=review_problems)
+
+
+@order_bp.route("/siparislerim/<int:order_id>/kalem/<int:item_id>/degerlendir", methods=["POST"])
+@role_required(RoleName.CUSTOMER)
+def review_item(order_id, item_id):
+    order = order_service.get_customer_order(current_user, order_id)
+    item = next((i for i in order.items if i.id == item_id), None) if order else None
+    if item is None:
+        abort(404)  # başkasının siparişi ya da bu siparişe ait olmayan kalem
+    form = ReviewForm()
+    if not form.validate_on_submit():
+        flash(next(iter(form.errors.values()))[0], "danger")
+        return redirect(url_for("order.customer_detail", order_id=order.id))
+    try:
+        review_service.create_review(current_user, item, form.rating.data, form.comment.data)
+    except ServiceError as error:
+        flash(error.message, "danger")
+    else:
+        flash("Değerlendirmeniz için teşekkürler! Üreticinin itibar puanı güncellendi.", "success")
+    return redirect(url_for("order.customer_detail", order_id=order.id))
 
 
 @order_bp.route("/siparislerim/<int:order_id>/odeme", methods=["GET", "POST"])

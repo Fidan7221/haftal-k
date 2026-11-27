@@ -69,11 +69,21 @@
 **Söyle:** "Bu ekran entegrasyonun özeti: her sayı başka bir modülün tablosundan geliyor. Kullanıcılar Hafta 5'ten, ürünler Hafta 6'dan, ilan ve sipariş Hafta 7'den."
 
 ## Adım 8 — Testler ve sürüm (45 sn) — VS Code
-1. Terminal: `python -m pytest` → **191 passed** (Hafta 8'de 98'di).
+1. Terminal: `python -m pytest` → **230 passed** (Hafta 8'de 98'di).
 2. `tests/test_integration.py` → `test_end_to_end_happy_path`: "Az önce gösterdiğim senaryonun otomatik hâli."
 3. `git tag` → `v0.8.0` … `v0.8.3`; `CHANGELOG.md` → ilgili bölümler.
 
 **Söyle:** "Bu hafta 4 entegrasyon hatası buldum. Her biri için önce hatayı yakalayan bir regresyon testi yazdım, sonra düzelttim."
+
+## Ek — Hafta 11 gösterimi (1,5 dk)
+1. Müşteri olarak **teslim edilmiş** bir siparişi aç → **Ürünleri değerlendirin** → 1 yıldız + boş yorum gönder
+   → "nedenini yazın" uyarısı; `www.ornek.com` yaz → "bağlantı paylaşılamaz".
+2. 5 yıldız + kısa yorum gönder → teşekkür mesajı. **Pazar** → ilan → altta yorum "Satın aldı" etiketiyle, üstte puan.
+3. Üretici: **Panelim → İtibar puanı → Değerlendirmeleri gör**.
+4. Yönetici: **Değerlendirmeler** → **Gizle** → ilan sayfasında yorum kaybolur, itibar yeniden hesaplanır.
+
+**Söyle:** "Yorum sipariş kalemine bağlı; satın almadan yorum yapmak imkânsız. İtibarda her müşteri tek oy
+ve Bayes ortalaması var; birkaç sahte yorum puanı uçlara taşıyamaz."
 
 ## Ek — Hafta 9 ve 10 gösterimi (2 dk)
 1. **Hal Fiyatları** menüsü → son fiyatlar ve 7 günlük değişim. Yönetici olarak **Fiyatları güncelle** → ikinci basışta "hız sınırı" mesajı.

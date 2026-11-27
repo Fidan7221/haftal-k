@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% from "_shop_macros.html" import stars %}
+{% block title %}Değerlendirmelerim{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <h1 class="h3 fw-bold mb-3"><i class="bi bi-star text-farm"></i> Değerlendirmelerim</h1>
+
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body d-flex flex-wrap align-items-center gap-4">
+      <div>
+        <div class="text-muted small">İtibar puanı</div>
+        <div class="display-6 fw-bold">{{ "%.1f"|format(profile.reputation_score) }}</div>
+        {{ stars(profile.reputation_score) }}
+      </div>
+      <div class="small text-muted" style="max-width: 640px">
+        {{ profile.review_count }} görünür değerlendirme. İtibar, yalnızca ürünü satın alıp teslim alan müşterilerin
+        puanlarından hesaplanır. Her müşteri tek oy sayılır ve az değerlendirmesi olan üreticinin puanı platform
+        ortalamasına yakın tutulur (Bayes ortalaması); böylece birkaç yorum puanı uçlara taşıyamaz.
+        Yöneticinin gizlediği yorumlar hesaba katılmaz.
+      </div>
+    </div>
+  </div>
+
+  {% for review in reviews %}
+    <div class="card border-0 shadow-sm mb-2 {{ 'opacity-50' if not review.is_visible }}">
+      <div class="card-body py-3">
+        <div class="d-flex flex-wrap justify-content-between gap-2">
+          <div>{{ stars(review.rating) }} <span class="fw-semibold ms-1">{{ review.order_item.listing.title }}</span></div>
+          <div class="small text-muted">
+            {{ review.customer.full_name.split()[0] }} · {{ review.created_at.strftime('%d.%m.%Y') }}
+            · Sipariş #{{ review.order_item.order_id }}
+            {% if not review.is_visible %}<span class="badge text-bg-secondary ms-1">Gizlendi</span>{% endif %}
+          </div>
+        </div>
+        {% if review.comment %}<p class="small mb-0 mt-2">{{ review.comment }}</p>{% endif %}
+      </div>
+    </div>
+  {% else %}
+    <div class="text-center text-muted py-5">
+      <i class="bi bi-chat-square display-5 d-block mb-2"></i>
+      Henüz değerlendirme yok. Müşteriler siparişleri teslim edildikten sonra ürünlerinizi değerlendirebilir.
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}

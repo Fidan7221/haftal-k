@@ -40,7 +40,11 @@ def detail(listing_id):
     if listing is None:
         abort(404)
     form = AddToCartForm(quantity=listing.min_order_quantity)
-    return render_template("listings/detail.html", listing=listing, form=form)
+    from app.services import review_service  # Hafta 11: ürünün puanı ve son yorumları
+    avg, count = review_service.product_summary(listing.product)
+    return render_template("listings/detail.html", listing=listing, form=form,
+                           product_rating=avg, product_review_count=count,
+                           reviews=review_service.latest_for_product(listing.product))
 
 
 # --- Üretici ilan yönetimi ----------------------------------------------------

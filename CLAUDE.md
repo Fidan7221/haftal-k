@@ -4,15 +4,15 @@
 dersinin haftalık projesi. Kod, yorumlar, belgeler ve kullanıcı arayüzü **Türkçe**; yeni kod da
 Türkçe yorumlu ve öğrencinin sözlü sınavda anlatabileceği sadelikte olmalı.
 
-- Sürüm: `0.10.8` (`app/__init__.py` → `__version__`; CHANGELOG ile aynı tutulur)
+- Sürüm: `0.11.0` (`app/__init__.py` → `__version__`; CHANGELOG ile aynı tutulur)
 - Teknoloji: Python 3 + Flask, SQLAlchemy, SQLite (yerel) / PostgreSQL (Neon; web servisi Render'da), Bootstrap 5, pytest
-- Haftalık ders planı README'deki "Haftalara göre durum" tablosunda. Sıradaki: **Hafta 11 — Değerlendirme ve İtibar Modülü**
+- Haftalık ders planı README'deki "Haftalara göre durum" tablosunda. Sıradaki: **Hafta 12 — Satış Raporu ve Bildirimler**
 
 ## Komutlar
 
 ```
 python run.py                     # http://127.0.0.1:5000
-python -m pytest                  # 191 test, ~3 dk
+python -m pytest                  # 230 test, ~3 dk
 flask db upgrade                  # migration'lar migrations_flask/ içinde (migrations/ Hafta 4 Node.js'e ait)
 flask seed-db / seed-demo / create-admin
 flask remove-demo-listings        # demo ilanlarını Pazar'dan kaldırır (Render açılışında çalışır)
@@ -97,6 +97,16 @@ python build_exe.py               # masaüstü .exe (masaustu.py)
   süresi dolmaz, AWS US East 2) kopyalandı; eski Render veri tabanına dokunulmadı. `render.yaml`'da artık
   veri tabanı yok; `DATABASE_URL` Render panelinde (sync: false). Neon adresinde `-pooler` YOK (doğrudan bağlantı).
 - Taşıma bir kerelikti (geçici betik, repoda değil). `tasima.env` (.gitignore'da) parola içerir; iş bitince silinmeli.
+
+## Hafta 11 — Değerlendirme ve İtibar (v0.11.0)
+
+- Şema değişmedi (reviews, producer_profiles.reputation_score/review_count Hafta 3'ten beri vardı).
+- `review_service.py`: `review_problem` (sahiplik, delivered, 30 gün, tek yorum), `content_problem`
+  (1-2★ gerekçe ≥15, e-posta/telefon > bağlantı > tekrar > büyük harf sırasıyla), `create_review` (günlük 10),
+  `set_visibility` (yönetici), `compute_reputation` (saf; her müşteri tek oy + Bayes C=5, m=platform ortalaması),
+  `refresh_reputations` (platform ortalaması değiştiği için yorumu olan TÜM üreticiler güncellenir).
+- Teslim zamanı ayrı sütun değil: `order.updated_at` (delivered son durum, sonra değişmez).
+- Yorumda müşterinin yalnızca adının ilk kelimesi gösterilir (KVKK); yönetici tam adı görür.
 
 ## Bilinen açık noktalar
 

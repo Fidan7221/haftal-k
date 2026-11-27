@@ -19,7 +19,7 @@ from app.extensions import csrf, db, login_manager, migrate
 # Hafta 8: Ara sürüm numarası (Semantic Versioning: MAJOR.MINOR.PATCH).
 # 0.x.y = henüz kararlı 1.0 değil; MINOR her yeni modülde, PATCH her hata düzeltmesinde artar.
 # Git etiketiyle (git tag v0.8.0) aynı tutulur; sayfanın alt bilgisinde görünür.
-__version__ = "0.10.8"
+__version__ = "0.11.0"
 
 
 @event.listens_for(Engine, "connect")  # her bağlantıda çalış
@@ -187,6 +187,13 @@ def register_cli_commands(app):
               f"atlanan hatalı satır: {report['skipped_rows']}")
         for error in report["errors"]:
             print("Hata:", error)
+
+    @app.cli.command("recompute-reputation")
+    def recompute_reputation():
+        """Tüm üreticilerin itibar puanını yorumlardan yeniden hesaplar (Hafta 11)."""
+        from app.services.review_service import refresh_reputations
+
+        print(f"{len(refresh_reputations())} üreticinin itibarı yeniden hesaplandı.")
 
     @app.cli.command("create-admin")
     @click.option("--name", prompt="Ad Soyad")

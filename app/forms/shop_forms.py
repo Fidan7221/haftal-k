@@ -130,3 +130,15 @@ class PaymentForm(FlaskForm):
         month, year = self.expiry.data.replace(" ", "").split("/")
         return CardInfo(holder=self.card_holder.data.strip(), number=_digits(self.card_number.data),
                         exp_month=int(month), exp_year=int(year) % 100 + 2000, cvc=self.cvc.data.strip())
+
+
+# --- Hafta 11: Değerlendirme formu -----------------------------------------------------------
+
+class ReviewForm(FlaskForm):
+    """Formdaki kontroller hızlı geri bildirim içindir; asıl kurallar review_service'te TEKRAR kontrol edilir."""
+
+    rating = SelectField("Puanınız", coerce=int, validators=[InputRequired(message="Puan seçin.")],
+                         choices=[(5, "★★★★★ 5 · Çok iyi"), (4, "★★★★ 4 · İyi"), (3, "★★★ 3 · Orta"),
+                                  (2, "★★ 2 · Kötü"), (1, "★ 1 · Çok kötü")])
+    comment = TextAreaField("Yorumunuz", validators=[Optional(), Length(max=500, message="En fazla 500 karakter.")])
+    submit = SubmitField("Değerlendirmeyi Gönder")

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_shop_macros.html" import tl %}
+{% from "_shop_macros.html" import tl, stars %}
 {% block title %}Sipariş #{{ order.id }}{% endblock %}
 
 {% set steps = ["pending", "paid", "shipped", "delivered"] %}
@@ -56,6 +56,38 @@
           </table>
         </div>
       </div>
+
+      {# Hafta 11: Değerlendirme — yalnızca müşteri, yalnızca teslim edilmiş sipariş #}
+      {% if not producer_view and order.status == "delivered" %}
+        <div class="card border-0 shadow-sm mt-4">
+          <div class="card-header bg-white fw-semibold"><i class="bi bi-star text-farm"></i> Ürünleri değerlendirin</div>
+          <ul class="list-group list-group-flush">
+            {% for item in order.items %}
+              <li class="list-group-item py-3">
+                <div class="fw-semibold mb-2">{{ item.listing.title }}</div>
+                {% if item.review %}
+                  <div>{{ stars(item.review.rating) }} <span class="small text-muted ms-1">{{ item.review.created_at.strftime('%d.%m.%Y') }}</span>
+                    {% if not item.review.is_visible %}<span class="badge text-bg-secondary ms-1">Yönetici tarafından gizlendi</span>{% endif %}</div>
+                  {% if item.review.comment %}<p class="small mb-0 mt-1">{{ item.review.comment }}</p>{% endif %}
+                {% elif review_problems.get(item.id) %}
+                  <div class="small text-muted">{{ review_problems[item.id] }}</div>
+                {% else %}
+                  <form method="post" action="{{ url_for('order.review_item', order_id=order.id, item_id=item.id) }}" class="row g-2">
+                    {{ review_form.csrf_token }}
+                    <div class="col-sm-4">{{ review_form.rating(class="form-select", id="rating-" ~ item.id, **{"aria-label": "Puan"}) }}</div>
+                    <div class="col-sm-8">{{ review_form.comment(class="form-control", rows=2, id="comment-" ~ item.id, maxlength=500,
+                         placeholder="Ürün nasıldı? (1-2 yıldızda nedenini yazmanız gerekir)") }}</div>
+                    <div class="col-12 d-flex justify-content-between align-items-center">
+                      <span class="form-text">Bağlantı, telefon veya e-posta paylaşmayın.</span>
+                      <button class="btn btn-sm btn-farm">Gönder</button>
+                    </div>
+                  </form>
+                {% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endif %}
     </div>
 
     <div class="col-lg-4">

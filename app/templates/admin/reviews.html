@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% from "_shop_macros.html" import stars %}
+{% block title %}Değerlendirmeler · Yönetici{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 fw-bold mb-0"><i class="bi bi-star text-farm"></i> Değerlendirmeler</h1>
+    <div class="btn-group btn-group-sm">
+      <a href="{{ url_for('admin.reviews') }}" class="btn btn-outline-secondary {{ 'active' if not only_hidden }}">Tümü</a>
+      <a href="{{ url_for('admin.reviews', gizli=1) }}" class="btn btn-outline-secondary {{ 'active' if only_hidden }}">Gizlenenler</a>
+    </div>
+  </div>
+  <p class="text-muted small">Uygunsuz (hakaret, alakasız, sahte görünen) bir değerlendirmeyi gizleyebilirsiniz. Gizli yorum
+    ürün sayfasında görünmez ve itibar hesabına katılmaz; silinmez, istenirse yeniden yayına alınır.</p>
+
+  {% for review in reviews %}
+    <div class="card border-0 shadow-sm mb-2 {{ 'opacity-50' if not review.is_visible }}">
+      <div class="card-body py-3 d-flex flex-wrap justify-content-between gap-3">
+        <div>
+          <div>{{ stars(review.rating) }}
+            <span class="fw-semibold ms-1">{{ review.order_item.listing.title }}</span>
+            <span class="small text-muted">· {{ review.producer.farm_name }}</span></div>
+          <div class="small text-muted">{{ review.customer.full_name }} · {{ review.created_at.strftime('%d.%m.%Y %H:%M') }}
+            · <a href="{{ url_for('admin.order_detail', order_id=review.order_item.order_id) }}" class="link-farm">Sipariş #{{ review.order_item.order_id }}</a></div>
+          {% if review.comment %}<p class="small mb-0 mt-1">{{ review.comment }}</p>{% endif %}
+        </div>
+        <form method="post" action="{{ url_for('admin.toggle_review', review_id=review.id) }}" class="align-self-center">
+          {{ action_form.csrf_token }}
+          {% if review.is_visible %}
+            <button class="btn btn-sm btn-outline-danger"><i class="bi bi-eye-slash"></i> Gizle</button>
+          {% else %}
+            <button class="btn btn-sm btn-outline-success"><i class="bi bi-eye"></i> Yayına al</button>
+          {% endif %}
+        </form>
+      </div>
+    </div>
+  {% else %}
+    <div class="text-center text-muted py-5">{{ "Gizlenmiş değerlendirme yok." if only_hidden else "Henüz değerlendirme yok." }}</div>
+  {% endfor %}
+</div>
+{% endblock %}

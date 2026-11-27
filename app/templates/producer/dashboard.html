@@ -54,6 +54,7 @@
       <div class="text-muted small">İtibar puanı</div>
       <div class="fs-3 fw-bold">{{ "%.1f"|format(profile.reputation_score) }}
         <small class="fs-6 text-muted">({{ profile.review_count }} yorum)</small></div>
+      <a href="{{ url_for('producer.reviews') }}" class="small link-farm stretched-link">Değerlendirmeleri gör</a>
     </div></div></div>
   </div>
 

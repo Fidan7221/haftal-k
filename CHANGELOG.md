@@ -5,7 +5,20 @@ Bu dosya [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) düzenine, sü
 Her sürüm bir Git etiketiyle (`git tag -a vX.Y.Z`) işaretlenir.
 
 ## [Yayımlanmadı]
-- Hafta 11: Değerlendirme ve itibar modülü (planlanan → `0.11.0`)
+- Hafta 12: Satış raporu ve bildirimler (planlanan → `0.12.0`)
+
+## [0.11.0] - 2026-11-27 — Hafta 11: Değerlendirme ve İtibar Modülü
+### Eklendi
+- Müşteri teslim edilmiş siparişteki her ürünü 1-5 yıldız ve yorumla değerlendirir (sipariş detayı)
+- İş kuralları: yalnızca siparişin sahibi, yalnızca teslimden sonra ve 30 gün içinde, kalem başına tek yorum,
+  1-2 yıldızda gerekçe zorunlu (`app/services/review_service.py`)
+- Kötüye kullanım önleme: doğrulanmış satın alma, her müşteri tek oy, Bayes ortalaması, günlük sınır,
+  bağlantı/telefon/e-posta/spam denetimi, yönetici moderasyonu (`/yonetici/degerlendirmeler`)
+- İtibar: Bayes ortalaması, üretici profilinde önbellek; `flask recompute-reputation`
+- İlan sayfasında ürün puanı ve "Satın aldı" etiketli yorumlar; ilan kartında üretici puanı
+- Üretici: `/uretici/degerlendirmeler`; panelde itibar kartı bağlantılı
+- Testler: `tests/test_reviews.py` (39 test; toplam 230)
+- Belge: `docs/HAFTA11_DEGERLENDIRME_ITIBAR.md`
 
 ## [0.10.8] - 2026-11-27
 ### Değişti

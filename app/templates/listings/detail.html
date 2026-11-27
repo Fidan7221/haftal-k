@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% from "_macros.html" import product_image, render_field %}
-{% from "_shop_macros.html" import tl %}
+{% from "_shop_macros.html" import tl, stars %}
 {% block title %}{{ listing.title }}{% endblock %}
 
 {% block content %}
@@ -28,6 +28,17 @@
       <p class="text-muted mb-2">
         <i class="bi bi-tree"></i> {{ listing.producer.farm_name }} · <i class="bi bi-geo-alt"></i> {{ listing.producer.region }}
         {% if listing.producer.is_verified %}<span class="badge text-bg-success ms-1"><i class="bi bi-patch-check"></i> Doğrulanmış</span>{% endif %}
+      </p>
+      {# Hafta 11: üreticinin itibarı ve bu ürünün puanı #}
+      <p class="small mb-2">
+        {% if listing.producer.review_count %}
+          Üretici itibarı: {{ stars(listing.producer.reputation_score) }}
+          <strong>{{ "%.1f"|format(listing.producer.reputation_score) }}</strong>
+          <span class="text-muted">({{ listing.producer.review_count }} değerlendirme)</span>
+        {% else %}<span class="text-muted">Üreticinin henüz değerlendirmesi yok.</span>{% endif %}
+        {% if product_review_count %}
+          <span class="ms-2">· Bu ürün: <strong>{{ "%.1f"|format(product_rating) }}</strong>/5 ({{ product_review_count }})</span>
+        {% endif %}
       </p>
       <div class="display-6 fw-bold text-farm mb-3">{{ tl(listing.price) }} <small class="fs-5 text-muted fw-normal">/ {{ listing.product.unit }}</small></div>
 
@@ -62,5 +73,20 @@
       {% endif %}
     </div>
   </div>
+
+  {# Hafta 11: Doğrulanmış alışveriş yorumları (yalnızca görünür olanlar) #}
+  <section class="mt-5">
+    <h2 class="h5 fw-bold mb-3"><i class="bi bi-chat-square-text text-farm"></i> Değerlendirmeler</h2>
+    {% for review in reviews %}
+      <div class="border-bottom py-2">
+        <div>{{ stars(review.rating) }}
+          <span class="small text-muted ms-1">{{ review.customer.full_name.split()[0] }} · {{ review.created_at.strftime('%d.%m.%Y') }}</span>
+          <span class="badge text-bg-light border ms-1"><i class="bi bi-bag-check"></i> Satın aldı</span></div>
+        {% if review.comment %}<p class="small mb-0 mt-1">{{ review.comment }}</p>{% endif %}
+      </div>
+    {% else %}
+      <p class="text-muted small mb-0">Bu ürün için henüz değerlendirme yok. Yalnızca ürünü satın alıp teslim alan müşteriler değerlendirme yapabilir.</p>
+    {% endfor %}
+  </section>
 </div>
 {% endblock %}

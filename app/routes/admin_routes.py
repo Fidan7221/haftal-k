@@ -1,4 +1,5 @@
-"""Yönetici rotaları (Hafta 6: kategoriler, Hafta 8: panel ve siparişler, Hafta 9-10: fiyat ve AI günlüğü)."""
+"""Yönetici rotaları (Hafta 6: kategoriler, Hafta 8: panel ve siparişler, Hafta 9-10: fiyat ve AI günlüğü,
+Hafta 11: değerlendirme moderasyonu)."""
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 from flask_login import current_user
 
@@ -8,7 +9,7 @@ from app.forms.shop_forms import ActionForm, OrderStatusForm
 from app.models import OrderStatus, RoleName
 from app.repositories.order_repository import OrderRepository, StatsRepository
 from app.repositories.product_repository import CategoryRepository
-from app.services import ai_service, category_service, order_service, price_service
+from app.services import ai_service, category_service, order_service, price_service, review_service
 from app.services.errors import ServiceError
 from app.utils.decorators import role_required
 from app.utils.forms import show_service_error
@@ -83,6 +84,30 @@ def sync_prices():
 def ai_log():
     return render_template("admin/ai_log.html", entries=ai_service.read_log(limit=50),
                            ai_status=ai_service.ai_status())
+
+
+# --- Hafta 11: Değerlendirme moderasyonu ----------------------------------------------------
+
+@admin_bp.route("/degerlendirmeler")
+@role_required(RoleName.ADMIN)
+def reviews():
+    only_hidden = request.args.get("gizli") == "1"
+    return render_template("admin/reviews.html", reviews=review_service.all_reviews(only_hidden),
+                           only_hidden=only_hidden, action_form=ActionForm())
+
+
+@admin_bp.route("/degerlendirmeler/<int:review_id>/gorunurluk", methods=["POST"])
+@role_required(RoleName.ADMIN)
+def toggle_review(review_id):
+    review = review_service.get_review(review_id)
+    if review is None:
+        abort(404)
+    if not ActionForm().validate_on_submit():
+        abort(400)
+    review_service.set_visibility(review, not review.is_visible)
+    flash("Değerlendirme gizlendi; itibar puanı yeniden hesaplandı." if not review.is_visible
+          else "Değerlendirme yeniden yayında; itibar puanı yeniden hesaplandı.", "success")
+    return redirect(url_for("admin.reviews"))
 
 
 # --- Hafta 6: Kategori yönetimi ------------------------------------------------

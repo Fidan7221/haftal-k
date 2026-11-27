@@ -56,6 +56,16 @@ def _product_form_kwargs(form):
 
 # --- Panel ve profil ------------------------------------------------------
 
+@producer_bp.route("/degerlendirmeler")
+@role_required(RoleName.PRODUCER)
+def reviews():
+    """Hafta 11: Üreticinin aldığı değerlendirmeler ve itibar puanı (yalnızca okunur)."""
+    from app.services import review_service
+    profile = _profile()
+    return render_template("producer/reviews.html", profile=profile,
+                           reviews=review_service.producer_reviews(profile))
+
+
 @producer_bp.route("/panel")
 @role_required(RoleName.PRODUCER)
 def dashboard():
