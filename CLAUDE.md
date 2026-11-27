@@ -4,15 +4,15 @@
 dersinin haftalık projesi. Kod, yorumlar, belgeler ve kullanıcı arayüzü **Türkçe**; yeni kod da
 Türkçe yorumlu ve öğrencinin sözlü sınavda anlatabileceği sadelikte olmalı.
 
-- Sürüm: `0.11.0` (`app/__init__.py` → `__version__`; CHANGELOG ile aynı tutulur)
+- Sürüm: `0.12.0` (`app/__init__.py` → `__version__`; CHANGELOG ile aynı tutulur)
 - Teknoloji: Python 3 + Flask, SQLAlchemy, SQLite (yerel) / PostgreSQL (Neon; web servisi Render'da), Bootstrap 5, pytest
-- Haftalık ders planı README'deki "Haftalara göre durum" tablosunda. Sıradaki: **Hafta 12 — Satış Raporu ve Bildirimler**
+- Haftalık ders planı README'deki "Haftalara göre durum" tablosunda. Sıradaki: **Hafta 13 — Test ve Hata Ayıklama**
 
 ## Komutlar
 
 ```
 python run.py                     # http://127.0.0.1:5000
-python -m pytest                  # 230 test, ~3 dk
+python -m pytest                  # 249 test, ~3 dk
 flask db upgrade                  # migration'lar migrations_flask/ içinde (migrations/ Hafta 4 Node.js'e ait)
 flask seed-db / seed-demo / create-admin
 flask remove-demo-listings        # demo ilanlarını Pazar'dan kaldırır (Render açılışında çalışır)
@@ -107,6 +107,18 @@ python build_exe.py               # masaüstü .exe (masaustu.py)
   `refresh_reputations` (platform ortalaması değiştiği için yorumu olan TÜM üreticiler güncellenir).
 - Teslim zamanı ayrı sütun değil: `order.updated_at` (delivered son durum, sonra değişmez).
 - Yorumda müşterinin yalnızca adının ilk kelimesi gösterilir (KVKK); yönetici tam adı görür.
+
+## Hafta 12 — Satış raporu ve bildirimler (v0.12.0)
+
+- `report_service.py`: ciro = Σ qty×unit_price, yalnızca SALE_STATUSES (paid/shipped/delivered) — Hafta 8
+  `StatsRepository` ciro kuralıyla AYNI (testte eşitlik var). Toplamlar/top ürünler SQL GROUP BY; günlük seri
+  Python'da Türkiye günü (sabit UTC+3, `TR`), boş gün 0. Miktar birime göre ayrı. Önceki dönem 0 ise % yok (None).
+  `bar_chart` y ekseni 0'dan. CSV: BOM, `;`, ondalık virgül, `_safe_cell` (=,+,-,@ başına ').
+- `notification_service.py` + `notifications` tablosu (migration `c4e7a19d3b60`). `notify()` commit ETMEZ;
+  tetikleyiciler: payment_service.pay_order (paid→üretici), order_service.change_status (shipped/delivered/cancelled
+  karşı tarafa), checkout (stok eşiği 5, yalnızca ilk geçişte), review_service (yeni yorum). Pending'e bildirim yok.
+  `/bildirimler/<id>` yalnızca "/..." (ama "//" değil) adrese yönlendirir.
+- `tr_time` şablon filtresi: UTC kayıtları Türkiye saatinde gösterir.
 
 ## Bilinen açık noktalar
 

@@ -115,6 +115,8 @@ def create_review(user, item, rating, comment=None):
     review = Review(order_item=item, customer=user, producer_id=item.producer_id, rating=rating,
                     comment=(comment or "").strip() or None, is_visible=True)
     ReviewRepository.add(review)
+    from app.services import notification_service  # Hafta 12
+    notification_service.review_received(review)
     try:
         ReviewRepository.commit()
         refresh_reputations()  # ilişkili kayıtlar: üreticilerin itibar önbelleği

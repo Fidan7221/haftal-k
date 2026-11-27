@@ -23,11 +23,11 @@ SEPETTEN SİPARİŞE GEÇİŞ (checkout) tek bir işlem (transaction) içinde ya
 """
 from decimal import Decimal
 
-from app.models import ListingStatus, Order, OrderItem, OrderStatus
+from app.models import ListingStatus, Order, OrderItem, OrderStatus, PaymentStatus
 from app.repositories.cart_repository import CartRepository
 from app.repositories.listing_repository import ListingRepository
 from app.repositories.order_repository import OrderRepository
-from app.services import payment_service
+from app.services import notification_service, payment_service
 from app.services.cart_service import item_problem
 from app.services.errors import ServiceError
 
@@ -146,6 +146,7 @@ def checkout(user, shipping_address, note=None):
             total = Decimal("0")
             for item in items:
                 listing = item.listing
+                stock_before = listing.stock_quantity  # Hafta 12: eşik geçişini yakalamak için
                 # 4) Stok düş: koşullu UPDATE 0 satır döndürürse stok başkası tarafından alınmış
                 if ListingRepository.decrease_stock(listing.id, item.quantity) == 0 or \
                         ListingRepository.decrease_product_stock(listing.product_id, item.quantity) == 0:
@@ -153,6 +154,7 @@ def checkout(user, shipping_address, note=None):
                                        "Sepetinizi güncelleyip tekrar deneyin.")
                 if listing.stock_quantity <= 0:
                     listing.status = ListingStatus.SOLD_OUT
+                notification_service.stock_changed(listing, stock_before, listing.stock_quantity)
 
                 # 3) Fiyatı dondur
                 order.items.append(OrderItem(
@@ -197,10 +199,16 @@ def change_status(user, order, new_status):
     try:
         if new_status == OrderStatus.CANCELLED:
             # Önce iade (harici API). Başarısızsa ServiceError -> rollback, sipariş iptal olmaz
+            was_paid = order.payment is not None and order.payment.status == PaymentStatus.SUCCESS
             payment_service.refund_payment(order.payment)
             _restore_stock(order)
+            notification_service.order_cancelled(order, role, refunded=was_paid)
+        elif new_status == OrderStatus.SHIPPED:
+            notification_service.order_shipped(order)
+        elif new_status == OrderStatus.DELIVERED:
+            notification_service.order_delivered(order)
         order.status = new_status
-        OrderRepository.commit()
+        OrderRepository.commit()  # durum ve bildirimler birlikte kalıcı olur
     except Exception:
         OrderRepository.rollback()
         raise

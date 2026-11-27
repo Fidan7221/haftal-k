@@ -14,6 +14,7 @@ from app.models.payment import Payment, PaymentStatus
 from app.models.price import MarketPrice
 from app.models.review import Review
 from app.models.prediction import PricePrediction, Trend
+from app.models.notification import Notification, NotificationKind
 
 __all__ = [
     "BaseModel",
@@ -27,4 +28,5 @@ __all__ = [
     "MarketPrice",
     "Review",
     "PricePrediction", "Trend",
+    "Notification", "NotificationKind",
 ]

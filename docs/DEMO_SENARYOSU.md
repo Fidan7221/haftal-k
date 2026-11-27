@@ -69,11 +69,21 @@
 **Söyle:** "Bu ekran entegrasyonun özeti: her sayı başka bir modülün tablosundan geliyor. Kullanıcılar Hafta 5'ten, ürünler Hafta 6'dan, ilan ve sipariş Hafta 7'den."
 
 ## Adım 8 — Testler ve sürüm (45 sn) — VS Code
-1. Terminal: `python -m pytest` → **230 passed** (Hafta 8'de 98'di).
+1. Terminal: `python -m pytest` → **249 passed** (Hafta 8'de 98'di).
 2. `tests/test_integration.py` → `test_end_to_end_happy_path`: "Az önce gösterdiğim senaryonun otomatik hâli."
 3. `git tag` → `v0.8.0` … `v0.8.3`; `CHANGELOG.md` → ilgili bölümler.
 
 **Söyle:** "Bu hafta 4 entegrasyon hatası buldum. Her biri için önce hatayı yakalayan bir regresyon testi yazdım, sonra düzelttim."
+
+## Ek — Hafta 12 gösterimi (1,5 dk)
+1. Müşteri olarak bir sipariş verip öde → üretici olarak gir: menüde 🔔 üzerinde sayı → **Bildirimler** → "Sipariş #… ödendi"
+   → tıkla, siparişe gider. **Kargoya verdim** → müşteride "kargoya verildi" bildirimi.
+2. Üretici: menü → **Rapor** → kartlar (ciro, sipariş, ortalama, iptal oranı), özet cümle, günlük ciro grafiği,
+   en çok satanlar. **Son 7 / 30 / 90 gün** arasında geçiş. **CSV indir** → Excel'de aç.
+3. Yönetici: menü → **Rapor** → platform geneli + üreticiye göre ciro.
+
+**Söyle:** "Ciroya yalnızca ödenmiş siparişler giriyor; bekleyen ve iptal ayrı gösteriliyor. kg ile adet toplanmıyor,
+boş günler grafikte 0, eksen 0'dan başlıyor. Bildirim olayla aynı işlemde kaydediliyor."
 
 ## Ek — Hafta 11 gösterimi (1,5 dk)
 1. Müşteri olarak **teslim edilmiş** bir siparişi aç → **Ürünleri değerlendirin** → 1 yıldız + boş yorum gönder

@@ -23,6 +23,7 @@ from app.extensions import db
 from app.integrations.http import IntegrationError
 from app.integrations.payment_api import get_payment_gateway
 from app.models import OrderStatus, Payment, PaymentStatus
+from app.services import notification_service
 from app.services.errors import ServiceError
 
 log = logging.getLogger(__name__)
@@ -75,6 +76,7 @@ def pay_order(user, order, card):
     payment.transaction_ref = result.transaction_ref
     payment.paid_at = datetime.now(timezone.utc)
     order.status = OrderStatus.PAID
+    notification_service.order_paid(order)  # Hafta 12: ödemeyle aynı işlemde kaydedilir
     db.session.commit()
     return payment
 

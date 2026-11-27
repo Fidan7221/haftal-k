@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% from "_shop_macros.html" import tl %}
+{% block title %}Satış Raporu{% endblock %}
+
+{% macro change_badge(value) -%}
+  {% if value is none %}<span class="text-muted small">önceki dönemde yok</span>
+  {% elif value >= 0 %}<span class="text-success small"><i class="bi bi-arrow-up-right"></i> %{{ "%.0f"|format(value) }}</span>
+  {% else %}<span class="text-danger small"><i class="bi bi-arrow-down-right"></i> %{{ "%.0f"|format(value|abs) }}</span>{% endif %}
+{%- endmacro %}
+
+{% block content %}
+{% set c = report.current %}
+{% set csv_endpoint = 'report.admin_report_csv' if admin_view else 'report.producer_report_csv' %}
+{% set page_endpoint = 'report.admin_report' if admin_view else 'report.producer_report' %}
+<div class="container py-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+    <h1 class="h3 fw-bold mb-0"><i class="bi bi-bar-chart-line text-farm"></i>
+      {{ "Platform Satış Raporu" if admin_view else "Satış Raporu" }}</h1>
+    <div class="d-flex gap-2">
+      <div class="btn-group btn-group-sm" role="group" aria-label="Dönem">
+        {% for d in periods %}
+          <a href="{{ url_for(page_endpoint, gun=d) }}" class="btn btn-outline-success {{ 'active' if d == report.days }}">Son {{ d }} gün</a>
+        {% endfor %}
+      </div>
+      <a href="{{ url_for(csv_endpoint, gun=report.days) }}" class="btn btn-sm btn-farm"><i class="bi bi-download"></i> CSV indir</a>
+    </div>
+  </div>
+  <p class="text-muted small mb-3">{{ report.start.strftime('%d.%m.%Y') }} – {{ report.last_day.strftime('%d.%m.%Y') }}
+    · Türkiye saati · Ciroya yalnızca ödemesi alınmış (ödendi / kargoda / teslim) siparişler girer.</p>
+
+  <div class="alert alert-light border mb-4"><i class="bi bi-chat-left-text text-farm"></i> {{ summary }}</div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3"><div class="card stat-card h-100"><div class="card-body">
+      <div class="text-muted small">Ciro</div>
+      <div class="fs-4 fw-bold text-farm">{{ tl(c.revenue) }}</div>
+      {{ change_badge(report.revenue_change) }}
+    </div></div></div>
+    <div class="col-6 col-lg-3"><div class="card stat-card h-100"><div class="card-body">
+      <div class="text-muted small">Sipariş</div>
+      <div class="fs-4 fw-bold">{{ c.orders }}</div>
+      {{ change_badge(report.orders_change) }}
+    </div></div></div>
+    <div class="col-6 col-lg-3"><div class="card stat-card h-100"><div class="card-body">
+      <div class="text-muted small">Ortalama sipariş</div>
+      <div class="fs-4 fw-bold">{{ tl(c.avg_order) if c.avg_order is not none else "—" }}</div>
+    </div></div></div>
+    <div class="col-6 col-lg-3"><div class="card stat-card h-100 {{ 'stat-warn' if c.cancel_rate and c.cancel_rate >= 20 }}"><div class="card-body">
+      <div class="text-muted small">İptal oranı</div>
+      <div class="fs-4 fw-bold">{{ "%%%.0f"|format(c.cancel_rate) if c.cancel_rate is not none else "—" }}</div>
+      <div class="small text-muted">{{ c.cancelled }} iptal{% if c.pending %} · {{ c.pending }} ödeme bekliyor{% endif %}</div>
+    </div></div></div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm h-100"><div class="card-body">
+        <h2 class="h6 fw-semibold">Günlük ciro (TL)</h2>
+        {# Y ekseni 0'dan başlar; satışsız günler 0 çubuğu olarak gösterilir (eksik gün atlanmaz) #}
+        <svg viewBox="0 0 {{ chart.width }} {{ chart.height }}" class="w-100" role="img"
+             aria-label="Son {{ report.days }} günün günlük cirosu, en yüksek {{ chart.grid[-1].label }} TL">
+          {% for g in chart.grid %}
+            <line x1="{{ chart.pad_left }}" x2="{{ chart.width }}" y1="{{ g.y }}" y2="{{ g.y }}" stroke="#dee2e6" stroke-width="1"/>
+            <text x="{{ chart.pad_left - 6 }}" y="{{ g.y + 4 }}" text-anchor="end" font-size="10" fill="#6c757d">{{ g.label }}</text>
+          {% endfor %}
+          {% for b in chart.bars %}
+            <rect x="{{ b.x }}" y="{{ b.y }}" width="{{ b.w }}" height="{{ b.h }}" fill="#2e7d32" rx="1">
+              <title>{{ b.day.strftime('%d.%m.%Y') }}: {{ tl(b.value) }}</title>
+            </rect>
+            {% if b.label %}<text x="{{ b.x + b.w / 2 }}" y="{{ chart.height - 6 }}" text-anchor="middle" font-size="10" fill="#6c757d">{{ b.label }}</text>{% endif %}
+          {% endfor %}
+        </svg>
+        {% if not report.has_data %}<p class="text-muted small mb-0 mt-2">Bu dönemde sipariş yok.</p>{% endif %}
+      </div></div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm h-100"><div class="card-body">
+        <h2 class="h6 fw-semibold">En çok ciro getiren ürünler</h2>
+        {% set top_max = report.top_products[0].revenue if report.top_products else 0 %}
+        {% for p in report.top_products %}
+          <div class="mb-2">
+            <div class="d-flex justify-content-between small"><span>{{ p.name }}</span><span class="fw-semibold">{{ tl(p.revenue) }}</span></div>
+            <div class="progress" style="height: 8px" role="progressbar" aria-label="{{ p.name }} cirosu">
+              <div class="progress-bar bg-success" style="width: {{ (p.revenue / top_max * 100)|round(1) if top_max else 0 }}%"></div>
+            </div>
+            <div class="small text-muted">{{ p.quantity|qty }} {{ p.unit }}</div>
+          </div>
+        {% else %}<p class="text-muted small mb-0">Satış yok.</p>{% endfor %}
+
+        <h2 class="h6 fw-semibold mt-4">Satılan miktar (birime göre)</h2>
+        <ul class="list-unstyled small mb-0">
+          {% for unit, quantity in report.by_unit %}<li>{{ quantity|qty }} {{ unit }}</li>
+          {% else %}<li class="text-muted">—</li>{% endfor %}
+        </ul>
+        <div class="form-text">Farklı birimler (kg, adet, kasa) toplanmaz.</div>
+      </div></div>
+    </div>
+  </div>
+
+  {% if admin_view %}
+    <div class="card border-0 shadow-sm mt-4"><div class="card-body">
+      <h2 class="h6 fw-semibold">Üreticiye göre ciro</h2>
+      <table class="table table-sm mb-0">
+        <tbody>
+          {% for farm, revenue in report.by_producer %}
+            <tr><td>{{ farm }}</td><td class="text-end fw-semibold">{{ tl(revenue) }}</td></tr>
+          {% else %}<tr><td class="text-muted">Satış yok.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div></div>
+  {% endif %}
+
+  {% if c.pending %}
+    <p class="small text-muted mt-3 mb-0"><i class="bi bi-hourglass-split"></i> {{ c.pending }} sipariş ödeme bekliyor
+      ({{ tl(c.pending_amount) }}). Ödeme alınana kadar ciroya eklenmez.</p>
+  {% endif %}
+</div>
+{% endblock %}

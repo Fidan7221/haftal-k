@@ -5,7 +5,20 @@ Bu dosya [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) düzenine, sü
 Her sürüm bir Git etiketiyle (`git tag -a vX.Y.Z`) işaretlenir.
 
 ## [Yayımlanmadı]
-- Hafta 12: Satış raporu ve bildirimler (planlanan → `0.12.0`)
+- Hafta 13: Test ve hata ayıklama (planlanan → `0.13.0`)
+
+## [0.12.0] - 2026-11-27 — Hafta 12: Satış Raporu ve Bildirimler
+### Eklendi
+- Satış raporu: üretici `/uretici/rapor`, yönetici `/yonetici/rapor` (son 7/30/90 gün). Ciro (yalnızca
+  ödendi/kargoda/teslim), sipariş sayısı, ortalama sipariş, iptal oranı, birime göre miktar, en çok satanlar,
+  önceki döneme göre değişim, otomatik özet metni; yönetici için üreticiye göre ciro
+- Günlük ciro grafiği (SVG, 0'dan başlayan eksen, Türkiye günü, boş gün = 0)
+- CSV dışa aktarma (Excel uyumlu: BOM, `;`, ondalık virgül; formül enjeksiyonu önlemi)
+- Bildirimler: sipariş ödendi/kargoda/teslim/iptal, stok eşiği ve tükenme (yalnızca ilk geçişte), yeni
+  değerlendirme. Menüde 🔔 ve okunmamış sayısı, `/bildirimler`. Olayla aynı işlemde kaydedilir
+- `notifications` tablosu (migration `c4e7a19d3b60`); `tr_time` şablon filtresi (Türkiye saati)
+- Testler: `tests/test_reports.py` (19 test; toplam 249)
+- Belge: `docs/HAFTA12_RAPOR_BILDIRIM.md`
 
 ## [0.11.0] - 2026-11-27 — Hafta 11: Değerlendirme ve İtibar Modülü
 ### Eklendi

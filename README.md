@@ -5,12 +5,12 @@ Bilgisayar Uygulamaları I — Proje Tabanlı Ders, Bingöl Üniversitesi Bilgis
 
 **Teknoloji:** Python 3 + Flask, SQLAlchemy, SQLite (yerel) / PostgreSQL (canlı), Bootstrap 5, pytest, Render
 **Canlı adres:** https://tarladan-sofraya.onrender.com
-**Sürüm:** `v0.11.0` (Hafta 11: değerlendirme ve itibar · [değişiklik günlüğü](CHANGELOG.md))
+**Sürüm:** `v0.12.0` (Hafta 12: satış raporu ve bildirimler · [değişiklik günlüğü](CHANGELOG.md))
 **Belgeler:** [Mimari şema](docs/MIMARI.md) · [ER diyagramı](docs/ER_DIYAGRAMI.md) ·
 [Güvenlik notu (Hafta 5)](docs/GUVENLIK_NOTU.md) · [Üretici ve Ürün modülü (Hafta 6)](docs/MODUL_URETICI_URUN.md) ·
 [İlan, Sepet, Sipariş (Hafta 7)](docs/MODUL_ILAN_SEPET_SIPARIS.md) · [Canlı yayın rehberi (Hafta 7)](docs/CANLI_YAYIN.md) ·
 [Ara sürüm ve entegrasyon (Hafta 8)](docs/HAFTA8_ARA_SURUM.md) · [API entegrasyonu (Hafta 9)](docs/HAFTA9_API_ENTEGRASYONU.md) ·
-[Yapay zekâ bileşeni (Hafta 10)](docs/HAFTA10_YAPAY_ZEKA.md) · [Değerlendirme ve itibar (Hafta 11)](docs/HAFTA11_DEGERLENDIRME_ITIBAR.md) ·
+[Yapay zekâ bileşeni (Hafta 10)](docs/HAFTA10_YAPAY_ZEKA.md) · [Değerlendirme ve itibar (Hafta 11)](docs/HAFTA11_DEGERLENDIRME_ITIBAR.md) · [Rapor ve bildirimler (Hafta 12)](docs/HAFTA12_RAPOR_BILDIRIM.md) ·
 [Demo senaryosu](docs/DEMO_SENARYOSU.md) ·
 [AI kullanım günlüğü](docs/AI_KULLANIM_GUNLUGU.md) · [İlerleme raporu](docs/ILERLEME_RAPORU.md) · [Sözlü hazırlık (Hafta 8)](docs/SOZLU_HAFTA8.md)
 
@@ -27,6 +27,7 @@ Bilgisayar Uygulamaları I — Proje Tabanlı Ders, Bingöl Üniversitesi Bilgis
 | 9 | Harici API: hal fiyatı + ödeme, hata yönetimi `v0.9.0` | `app/integrations/`, `app/services/price_service.py`, `payment_service.py`, `tests/test_api_integration.py`, `docs/HAFTA9_API_ENTEGRASYONU.md` |
 | 10 | Yapay zekâ: fiyat trendi ve satış zamanı önerisi (Gemini ücretsiz / Claude) `v0.10.2` | `app/ai/`, `app/services/ai_service.py`, `tests/test_ai.py`, `docs/HAFTA10_YAPAY_ZEKA.md`, `docs/AI_KULLANIM_GUNLUGU.md` |
 | 11 | Değerlendirme ve itibar modülü `v0.11.0` | `app/services/review_service.py`, `app/repositories/review_repository.py`, `tests/test_reviews.py`, `docs/HAFTA11_DEGERLENDIRME_ITIBAR.md` |
+| 12 | Satış raporu ve bildirimler `v0.12.0` | `app/services/report_service.py`, `notification_service.py`, `app/routes/report_routes.py`, `tests/test_reports.py`, `docs/HAFTA12_RAPOR_BILDIRIM.md` |
 
 ## Flask uygulamasını çalıştırma (VS Code terminali)
 
@@ -45,7 +46,7 @@ flask recompute-reputation        # itibar puanlarını yeniden hesapla (Hafta 1
 flask fetch-prices --days 60      # hal fiyatları (Hafta 9; varsayılan: sahte servis, internet gerekmez)
 
 python run.py                     # http://127.0.0.1:5000
-python -m pytest                  # testler (230 test)
+python -m pytest                  # testler (249 test)
 ```
 
 ---

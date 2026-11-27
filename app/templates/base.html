@@ -31,11 +31,13 @@
             <li class="nav-item"><a class="nav-link" href="{{ url_for('producer.products') }}">Ürünlerim</a></li>
             <li class="nav-item"><a class="nav-link" href="{{ url_for('listing.my_listings') }}">İlanlarım</a></li>
             <li class="nav-item"><a class="nav-link" href="{{ url_for('order.producer_list') }}">Siparişler</a></li>
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('report.producer_report') }}">Rapor</a></li>
             <li class="nav-item"><a class="nav-link" href="{{ url_for('producer.edit_profile') }}">Profilim</a></li>
           {% elif current_user.is_authenticated and current_user.is_customer %}
             <li class="nav-item"><a class="nav-link" href="{{ url_for('order.customer_list') }}">Siparişlerim</a></li>
           {% elif current_user.is_authenticated and current_user.is_admin %}
             <li class="nav-item"><a class="nav-link" href="{{ url_for('admin.categories') }}">Kategoriler</a></li>
+            <li class="nav-item"><a class="nav-link" href="{{ url_for('report.admin_report') }}">Rapor</a></li>
           {% endif %}
         </ul>
 
@@ -49,6 +51,13 @@
                 </a>
               </li>
             {% endif %}
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('report.notifications') }}" title="Bildirimler"
+                 aria-label="Bildirimler{{ ' (' ~ notification_count ~ ' okunmamış)' if notification_count }}">
+                <i class="bi bi-bell{{ '-fill' if notification_count }}"></i>
+                {% if notification_count %}<span class="badge rounded-pill text-bg-warning">{{ notification_count }}</span>{% endif %}
+              </a>
+            </li>
             <li class="nav-item">
               <a class="nav-link" href="{{ url_for('main.dashboard') }}">
                 <i class="bi bi-speedometer2"></i> Panelim

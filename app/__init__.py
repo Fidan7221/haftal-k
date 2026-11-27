@@ -19,7 +19,7 @@ from app.extensions import csrf, db, login_manager, migrate
 # Hafta 8: Ara sürüm numarası (Semantic Versioning: MAJOR.MINOR.PATCH).
 # 0.x.y = henüz kararlı 1.0 değil; MINOR her yeni modülde, PATCH her hata düzeltmesinde artar.
 # Git etiketiyle (git tag v0.8.0) aynı tutulur; sayfanın alt bilgisinde görünür.
-__version__ = "0.11.0"
+__version__ = "0.12.0"
 
 
 @event.listens_for(Engine, "connect")  # her bağlantıda çalış
@@ -103,6 +103,18 @@ def register_template_filters(app):
             return url_for("static", filename="uploads/" + path)
         return None
 
+    @app.template_filter("tr_time")
+    def turkey_time(value, fmt="%d.%m.%Y %H:%M"):
+        """Kayıtlar UTC; ekranda Türkiye saati (UTC+3) gösterilir (Hafta 12)."""
+        from datetime import timezone
+
+        from app.services.report_service import TR
+        if value is None:
+            return ""
+        if value.tzinfo is None:  # SQLite saat dilimini saklamaz; değer UTC'dir
+            value = value.replace(tzinfo=timezone.utc)
+        return value.astimezone(TR).strftime(fmt)
+
     @app.template_filter("qty")
     def format_quantity(value):
         """Miktarı Türkçe biçimde yazar: Decimal('12.50') -> '12,5', Decimal('100.00') -> '100'"""
@@ -123,6 +135,7 @@ def register_blueprints(app):
     from app.routes.cart_routes import cart_bp
     from app.routes.order_routes import order_bp
     from app.routes.price_routes import price_bp
+    from app.routes.report_routes import report_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
@@ -132,6 +145,7 @@ def register_blueprints(app):
     app.register_blueprint(cart_bp)      # Hafta 7: sepet ve ödeme
     app.register_blueprint(order_bp)     # Hafta 7: siparişler
     app.register_blueprint(price_bp)     # Hafta 9-10: hal fiyatları ve satış zamanı önerisi
+    app.register_blueprint(report_bp)    # Hafta 12: satış raporu ve bildirimler
 
 
 def register_error_handlers(app):
